@@ -1,5 +1,7 @@
 import { IoHomeOutline } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
+import { Link } from "react-router-dom";
+import { SearchBar } from "./SearchBar";
 
 export const Nav = () => {
   return (
@@ -7,14 +9,15 @@ export const Nav = () => {
       <div className="h-16 flex items-center justify-between">
         {/* Logo */}
         <div className="text-3xl font-bold px-4">Logo</div>
-
+        <SearchBar />
         {/* Menú */}
         <div className="flex items-center">
-          <a href="/" className="px-4 no-underline">
+          
+          <Link to="/" className="px-4 no-underline">
             <IoHomeOutline className="w-8 h-8" /> {/* Aumenta o ajusta el tamaño */}
-          </a>
-          <a href="/library" className="text-lg px-4 no-underline">LIBRARY</a>
-          <a href="/profile" className="text-lg px-4 no-underline"><CgProfile className="w-8 h-8" /></a>
+          </Link>
+          <Link to="/library" className="text-lg px-4 no-underline">LIBRARY</Link>
+          <Link to="/profile" className="text-lg px-4 no-underline"><CgProfile className="w-8 h-8" /></Link>
         </div>
       </div>
     </nav>

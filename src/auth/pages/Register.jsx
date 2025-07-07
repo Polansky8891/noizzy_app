@@ -144,6 +144,10 @@ export const Register = () => {
           >
             Submit
           </button>
+          <div className="flex justify-center items-center mt-2">
+          <h3 className="text-black text-sm">Already have an account?</h3>
+          <a href="/login" className="text-sm px-4 no-underline text-blue-700">Sign In</a>
+        </div>
         </form>
       </div>
     </div>

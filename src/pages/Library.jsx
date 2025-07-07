@@ -3,6 +3,6 @@
 
 export const Library = () => {
   return (
-    <div>Library</div>
+    <h1>Library</h1>
   )
 }
