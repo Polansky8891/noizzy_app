@@ -7,6 +7,9 @@ import { Register } from './auth/pages/Register';
 import { Login } from './auth/pages/Login';
 import { SideBarLeft } from './components/SideBarLeft';
 import { SideBarRight } from './components/SideBarRight';
+import { Account } from './components/Account';
+import { PersonalInformation } from './components/PersonalInformation';
+import { SubscriptionManagement } from './components/SubscriptionManagement';
 
 export const App = () => {
   return (
@@ -26,6 +29,9 @@ export const App = () => {
               <Route path="/library" element={<Library />} />
               <Route path="/profile" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="/personal_information" element={<PersonalInformation/>} />
+              <Route path="/subscription_management" element={<SubscriptionManagement/>} />
             </Routes>
           </main>
 

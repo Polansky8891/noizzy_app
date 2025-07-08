@@ -1,7 +1,8 @@
+import { useNavigate } from "react-router-dom";
 
 export const SettingsMenu = ({ closeMenu }) => {
 
-    
+  const navigate = useNavigate();
 
   return (
 
@@ -10,7 +11,7 @@ export const SettingsMenu = ({ closeMenu }) => {
         <li>
           <button
             onClick={() => {
-              alert("Option 1 clicked");
+              navigate('/account');
               closeMenu();
             }}
             className="w-full text-left px-4 py-2 hover:bg-gray-100"
