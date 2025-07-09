@@ -10,6 +10,8 @@ import { SideBarRight } from './components/SideBarRight';
 import { Account } from './components/Account';
 import { PersonalInformation } from './components/PersonalInformation';
 import { SubscriptionManagement } from './components/SubscriptionManagement';
+import { ChangePassword } from './components/ChangePassword';
+import { Notifications } from './components/Notifications';
 
 export const App = () => {
   return (
@@ -32,6 +34,8 @@ export const App = () => {
               <Route path="/account" element={<Account />} />
               <Route path="/personal_information" element={<PersonalInformation/>} />
               <Route path="/subscription_management" element={<SubscriptionManagement/>} />
+              <Route path="/change_password" element={<ChangePassword/>} />
+              <Route path="/notifications" element={<Notifications/>} />
             </Routes>
           </main>
 

@@ -337,13 +337,13 @@ export const PersonalInformation = () => {
             <div className="border-t border-gray-300 pt-6 mt-6 flex justify-end space-x-4 bg-white">
                 <button
                     onClick={() => navigate(-1)}
-                    className="text-gray-600 font-medium hover:text-gray-800 transition"
+                    className="text-gray-600 font-medium cursor-pointer hover:text-gray-800 transition"
                     >
                     Cancelar
                 </button>
                 <button 
                     onClick={handleSave}
-                    className="bg-gray-800 text-white font-semibold px-5 py-2 rounded-full hover:bg-gray-700 transition"
+                    className="bg-gray-800 text-white font-semibold cursor-pointer px-5 py-2 rounded-full hover:bg-gray-700 transition"
                     >
                     Guardar perfil
                 </button>

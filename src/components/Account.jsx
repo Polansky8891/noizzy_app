@@ -33,8 +33,8 @@ export const Account = () => {
       <div className="bg-white p-6 rounded-xl shadow">
         <h3 className="text-xl font-semibold mb-4">Security and privacy</h3>
         <div className="space-y-3">
-          <CardItem icon={<RiLockPasswordLine />} label="Change your password" />
-          <CardItem icon={<FaRegBell />} label="Notifications" />
+          <CardItem icon={<RiLockPasswordLine />} label="Change your password" to="/change_password"/>
+          <CardItem icon={<FaRegBell />} label="Notifications" to="/notifications"/>
           <CardItem icon={<MdOutlinePrivacyTip />} label="Account privacy" />
         </div>
 
