@@ -1,13 +1,8 @@
 
-
-
-
 export const Home = () => {
-  return (
-    <>
-      
-      <div className="pt-16">Home</div>
-    </>
-    
-  )
+    return (
+    <section className="w-full h-full bg-[#CFFAE4] rounded-3xl">
+      {/* Contenido */}
+    </section>
+  );
 }

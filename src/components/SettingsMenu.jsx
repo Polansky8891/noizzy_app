@@ -6,7 +6,9 @@ export const SettingsMenu = ({ closeMenu }) => {
 
   return (
 
-    <div className="absolute bottom-12 right-0 bg-white border rounded-lg shadow-lg w-40 z-50">
+    <div 
+      className="absolute bottom-12 right-0 bg-black rounded-lg shadow-lg w-40 z-50"
+      >
       <ul className="py-1">
         <li>
           <button
@@ -14,7 +16,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               navigate('/account');
               closeMenu();
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
           >
             Account
           </button>
@@ -25,7 +27,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               alert("Option 2 clicked");
               closeMenu();
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
           >
             Settings
           </button>
@@ -36,7 +38,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               alert("Option 2 clicked");
               closeMenu();
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
           >
             Option 3
           </button>
@@ -47,7 +49,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               alert("Option 2 clicked");
               closeMenu();
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
           >
             Option 4
           </button>
@@ -58,7 +60,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               alert("Option 2 clicked");
               closeMenu();
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
           >
             Option 5
           </button>

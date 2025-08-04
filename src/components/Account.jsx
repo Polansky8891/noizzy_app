@@ -16,7 +16,7 @@ export const Account = () => {
         <h3 className="text-xl font-semibold mb-4">Account</h3>
         <div className="space-y-4">
           <CardItem icon={<BsPencil />} label="Personal information" to="/personal_information"/>
-          <CardItem icon={<MdOutlineHomeWork />}label="Address" />
+          <CardItem icon={<MdOutlineHomeWork />}label="Address" to="/address" />
         </div>
       </div>
 
@@ -25,7 +25,7 @@ export const Account = () => {
         <h3 className="text-xl font-semibold mb-4">Subscription</h3>
         <div className="space-y-4">
           <CardItem icon={<RiFolderMusicLine />} label="Subscription management" to="/subscription_management"/>
-          <CardItem icon={<MdCancelPresentation />} label="Cancel subscription" />
+          <CardItem icon={<MdCancelPresentation />} label="Cancel subscription" to="/cancel_subscription" />
         </div>
       </div>
 
@@ -35,7 +35,6 @@ export const Account = () => {
         <div className="space-y-3">
           <CardItem icon={<RiLockPasswordLine />} label="Change your password" to="/change_password"/>
           <CardItem icon={<FaRegBell />} label="Notifications" to="/notifications"/>
-          <CardItem icon={<MdOutlinePrivacyTip />} label="Account privacy" />
         </div>
 
       </div>

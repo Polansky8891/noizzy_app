@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { FiMail, FiSmartphone } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 
 export const Notifications = () => {
 
-  const [settings, setSettings] = useState({
-    music: { email: true, push: true },
-    podcasts: { email: false, push: false },
+  const navigate = useNavigate();
+
+  const defaultSettings = {
+    music: { email: true, push: true},
+    podcasts: { email: false, push: false},
+  }
+
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem("notificationSettings");
+    return saved ? JSON.parse(saved) : defaultSettings;
+
   });
 
   const toggleSetting = (category, type) => {
@@ -19,24 +28,29 @@ export const Notifications = () => {
     }));
   };
 
+  const handleSave = () => {
+    localStorage.setItem("notificationSettings", JSON.stringify(settings));
+    
+  }
+
   const options = [
     {
       key: "music",
-      title: "Música y artistas",
-      description: "Música y novedades de artistas que sigues o que podrían gustarte",
+      title: "Music  and artists",
+      description: "Music and news from artists you follow or might like to follow",
     },
     {
       key: "podcasts",
-      title: "Pódcasts y programas",
-      description: "Pódcasts y programas que pensamos que podrían gustarte",
+      title: "Podcasts and programs",
+      description: "Podcasts and programs we think you might like",
     },
   ];
 
   return (
     <div className="bg-gray-50 text-gray-800 p-6 max-w-4xl mx-auto rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-2xl font-bold mb-4 text-gray-900">Configuración de notificaciones</h2>
+      <h2 className="text-2xl font-bold mb-4 text-gray-900">Notifications settings</h2>
       <p className="text-gray-600 text-sm mb-6">
-        Elige las notificaciones que quieres recibir por push o correo. Estas preferencias solo se aplican a estas dos opciones.
+        Choose the notifications you want to receive by push or mail. These preferences only apply to these two options.
       </p>
 
       {/* Cabecera */}
@@ -95,7 +109,23 @@ export const Notifications = () => {
             </label>
           </div>
         </div>
+        
       ))}
+      <div className="bg-gray-50 pt-6 mt-6 flex justify-end space-x-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-gray-600 font-medium cursor-pointer hover:text-gray-800 transition"
+        >
+        Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          className="bg-gray-800 text-white font-semibold cursor-pointer px-5 py-2 rounded-full hover:bg-gray-700 transition"
+        >
+          Save
+        </button>
+
+      </div>
     </div>
   );
 };

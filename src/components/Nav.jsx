@@ -5,7 +5,7 @@ import { SearchBar } from "./SearchBar";
 
 export const Nav = () => {
   return (
-    <nav className="bg-green-200 text-white w-full fixed top-0 left-0">
+    <nav className="w-full h-16 bg-green-200 flex items-center justify-between px-4">
       <div className="h-16 flex items-center justify-between">
         {/* Logo */}
         <div className="text-3xl font-bold px-4">Logo</div>

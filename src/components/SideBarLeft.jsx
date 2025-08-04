@@ -5,6 +5,7 @@ import { SettingsMenu } from "./SettingsMenu";
 
 export const SideBarLeft = ( ) => {
 
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -33,13 +34,13 @@ export const SideBarLeft = ( ) => {
 
   return (
     
-    <aside className="w-80 bg-white border-r shadow-sm h-full">
-      <nav className="h-full flex flex-col bg-white border-r shadow-sm ">
+    <aside className="w-80 h-full shrink-0 bg-white border-r shadow-sm">
+      <nav className="h-full flex flex-col">
         <div className="p-4 pb-2 flex justify-between items-center">
-          {/* Aquí logo o título */}
+          {/* Logo/título */}
         </div>
 
-        <ul className="flex-1 px-3">TO DO</ul>
+        <ul className="flex-1 px-3">TO DOOOOO</ul>
 
         <div className="p-4 flex justify-end relative" ref={menuRef}>
           <button

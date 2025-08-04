@@ -1,25 +1,33 @@
 import { useState } from 'react';
+import { axiosInstance } from '../../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export const Register = () => {
   const [form, setForm] = useState({
-    displayName: '',
+    name: '',
     lastName: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
 
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const navigate = useNavigate();
+
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
     const newErrors = {};
 
-    if (!form.displayName.trim()) {
-      newErrors.displayName = 'First Name is required';
-    } else if (form.displayName.trim().length < 2) {
-      newErrors.displayName = 'First Name must be at least 2 characters';
-    } else if (!/^[A-Za-z]+$/.test(form.displayName)) {
-      newErrors.displayName = 'First Name can only contain letters';
+    if (!form.name.trim()) {
+      newErrors.name = 'First Name is required';
+    } else if (form.name.trim().length < 2) {
+      newErrors.name = 'First Name must be at least 2 characters';
+    } else if (!/^[A-Za-z]+$/.test(form.name)) {
+      newErrors.name = 'First Name can only contain letters';
     }
 
     if (!form.lastName.trim()) {
@@ -62,12 +70,24 @@ export const Register = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
 
-    if (validate()) {
-      // Aquí enviarías el form
-      console.log('Form submitted', form);
+    const isValid = validate();
+    if (!isValid) return;
+
+    const { name, email, password } = form;
+
+    try {
+      const { data } = await axiosInstance.post('/auth/new', { name, email, password });
+
+      navigate('/');
+      
+    } catch (error) {
+      const message = error.response?.data?.msg || 'Register failed';
+      setErrorMsg(message);
+
+      
     }
   };
 
@@ -81,11 +101,11 @@ export const Register = () => {
               <input 
                 className="bg-gray-200 text-black border-0 rounded-md p-2 w-full" 
                 placeholder="First Name" 
-                name="displayName"
-                value={form.displayName}
+                name="name"
+                value={form.name}
                 onChange={handleChange}
               />
-              {errors.displayName && ( <span className="text-red-600 text-sm block mt-1 text-left">{errors.displayName}</span> )}
+              {errors.name && ( <span className="text-red-600 text-sm block mt-1 text-left">{errors.name}</span> )}
             </div>
             <div className="w-full">
               <input 
@@ -114,28 +134,50 @@ export const Register = () => {
             )}
           </div>
 
-          <div className="w-full mb-4">
+          <div className="w-full mb-4 relative">
           <input 
-            className="bg-gray-200 text-black border-0 rounded-md p-2 w-full" 
+            className="bg-gray-200 text-black border-0 rounded-md p-2 w-full pr-10" 
             placeholder="Password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             name="password"
             value={form.password}
             onChange={handleChange}
           />
-          {errors.password && (<span className="text-red-600 text-sm block mt-1 text-left">{errors.password}</span> )}
+          <button
+            type='button'
+            onClick={() => setShowPassword(!showPassword)}
+            className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800'
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+          {errors.password && (
+            <span className="text-red-600 text-sm block mt-1 text-left">
+              {errors.password}
+            </span>
+          )}
           </div>
 
-          <div className="w-full mb-4">
+          <div className="w-full mb-4 relative">
           <input 
-            className="bg-gray-200 text-black border-0 rounded-md p-2 w-full" 
+            className="bg-gray-200 text-black border-0 rounded-md p-2 w-full pr-10" 
             placeholder="Confirm Password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             name="confirmPassword"
             value={form.confirmPassword}
             onChange={handleChange}
           />
-          {errors.confirmPassword && (<span className="text-red-600 text-sm block mt-1 text-left">{errors.confirmPassword}</span> )}
+          <button
+            type='button'
+            onClick={() => setShowPassword(!showPassword)}
+            className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800'
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+          {errors.password && (
+            <span className="text-red-600 text-sm block mt-1 text-left">
+              {errors.password}
+            </span>
+          )}
           </div>
 
           <button 

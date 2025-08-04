@@ -9,7 +9,7 @@ export const authSlice = createSlice({
         email: null,
         displayName: null,
         photoUrl: null,
-        errorMessage: null
+        errorMessage: undefined
     },
     reducers: {
         login: ( state, { payload } ) => {
@@ -30,6 +30,8 @@ export const authSlice = createSlice({
         },
         checkingCredentials: (state) => {
             state.status = 'checking';
+            state.user = {};
+            state.errorMessage = undefined;
         }
 
     }
