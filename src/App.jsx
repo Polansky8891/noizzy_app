@@ -15,6 +15,16 @@ import { CancelSubscription } from './components/CancelSubscription';
 import { SideBar } from './components/SideBar';
 import { MusicPlayer } from './components/MusicPlayer';
 import { Rock } from './pages/Rock';
+import { Pop } from './pages/Pop';
+import { Blues } from './pages/Blues';
+import { Classic } from './pages/Classic';
+import { Dubstep } from './pages/Dubstep';
+import { Electro } from './pages/Electro';
+import { HipHop } from './pages/HipHop';
+import { Reggae } from './pages/Reggae';
+import { House } from './pages/House';
+import { Jazz } from './pages/Jazz';
+
 
 export const App = () => {
   return (
@@ -39,6 +49,15 @@ export const App = () => {
               <Route path="/address" element={<Address/>} />
               <Route path="/cancel_subscription" element={<CancelSubscription/>} />
               <Route path="/rock" element={<Rock/>} />
+              <Route path="/pop" element={<Pop/>} />
+              <Route path="/blues" element={<Blues/>} />
+              <Route path="/classic" element={<Classic/>} />
+              <Route path="/dubstep" element={<Dubstep/>} />
+              <Route path="/electro" element={<Electro/>} />
+              <Route path="/hiphop" element={<HipHop/>} />
+              <Route path="/reggae" element={<Reggae/>} />
+              <Route path="/house" element={<House/>} />
+              <Route path="/jazz" element={<Jazz/>} />
             </Routes>
       </main>
       <MusicPlayer/>
