@@ -14,6 +14,7 @@ import { Address } from './components/Address';
 import { CancelSubscription } from './components/CancelSubscription';
 import { SideBar } from './components/SideBar';
 import { MusicPlayer } from './components/MusicPlayer';
+import { Rock } from './pages/Rock';
 
 export const App = () => {
   return (
@@ -37,6 +38,7 @@ export const App = () => {
               <Route path="/notifications" element={<Notifications/>} />
               <Route path="/address" element={<Address/>} />
               <Route path="/cancel_subscription" element={<CancelSubscription/>} />
+              <Route path="/rock" element={<Rock/>} />
             </Routes>
       </main>
       <MusicPlayer/>

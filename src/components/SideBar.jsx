@@ -1,6 +1,6 @@
 import profile from "../assets/images/profile.png";
 import { SideBarButton } from "./SideBarButton";
-import { BsFillMusicPlayerFill } from "react-icons/bs";
+import { HiHome } from "react-icons/hi2";
 import { MdLibraryMusic } from "react-icons/md";
 import { MdFavoriteBorder } from "react-icons/md";
 import { LuTrendingUp } from "react-icons/lu";
@@ -84,9 +84,9 @@ export const SideBar = () => {
             <span className="text-[#1DF0D8] text-xl leading-none">
             <SideBarButton
                  
-                 title={collapsed ? "" : "Player"}
-                 to="/player" 
-                 icon={<BsFillMusicPlayerFill/>}
+                 title={collapsed ? "" : "Home"}
+                 to="/" 
+                 icon={<HiHome />}
                  iconClassName="text-[#1DF0D8]"
             />
             </span>
