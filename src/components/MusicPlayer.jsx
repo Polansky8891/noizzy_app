@@ -30,7 +30,7 @@ export const MusicPlayer = () => {
       {/* Controles en burbuja */}
       <div className="flex items-center space-x-6 bg-[#1C1C1C] px-6 py-3 rounded-2xl shadow-inner backdrop-blur-sm">
         <FaStepBackward className="text-[#1DF0D8] hover:text-white cursor-pointer text-lg" />
-        <button className="bg-#1DF0D8 border-1 border-[#1DF0D8] text-[#1DF0D8] p-3 rounded-full shadow-md transition hover:text-white hover:border-white">
+        <button className="bg-#1DF0D8 border-1 border-[#1DF0D8] text-[#1DF0D8] p-3 rounded-full cursor-pointer shadow-md transition hover:text-white hover:border-white">
           <FaPlay />
         </button>
         <FaStepForward className="text-[#1DF0D8] hover:text-white cursor-pointer text-lg" />

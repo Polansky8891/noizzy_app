@@ -24,6 +24,7 @@ import { HipHop } from './pages/HipHop';
 import { Reggae } from './pages/Reggae';
 import { House } from './pages/House';
 import { Jazz } from './pages/Jazz';
+import { GenreCard } from './components/GenreCard';
 
 
 export const App = () => {
@@ -58,6 +59,7 @@ export const App = () => {
               <Route path="/reggae" element={<Reggae/>} />
               <Route path="/house" element={<House/>} />
               <Route path="/jazz" element={<Jazz/>} />
+              <Route path="/genre/:slug" element={<GenreCard />} />
             </Routes>
       </main>
       <MusicPlayer/>

@@ -14,16 +14,16 @@ import { GenreCard } from '../components/GenreCard';
 export const Home = () => {
 
   const genres = [
-    { name: "Rock", img: rockImg, to: "/rock"},
-    { name: "Pop", img: popImg, to:"/pop"},
-    { name: "Blues", img: bluesImg, to:"/blues"},
-    { name: "Classic", img: classicImg, to:"/classic"},
-    { name: "Dubstep", img: dubstepImg, to:"/dubstep"},
-    { name: "Electro", img: electroImg, to:"/electro"},
-    { name: "Hip Hop", img: hiphopImg, to:"/hiphop"},
-    { name: "Reggae", img: reggaeImg, to:"/reggae"},
-    { name: "House", img: houseImg, to:"/house"},
-    { name: "Jazz", img: jazzImg, to:"/jazz"}
+    { name: "Rock", img: rockImg, slug: "rock"},
+    { name: "Pop", img: popImg, slug:"pop"},
+    { name: "Blues", img: bluesImg, slug:"blues"},
+    { name: "Classic", img: classicImg, slug:"classic"},
+    { name: "Dubstep", img: dubstepImg, slug:"dubstep"},
+    { name: "Electro", img: electroImg, slug:"electro"},
+    { name: "Hip Hop", img: hiphopImg, slug:"hiphop"},
+    { name: "Reggae", img: reggaeImg, slug:"reggae"},
+    { name: "House", img: houseImg, slug:"house"},
+    { name: "Jazz", img: jazzImg, slug:"jazz"}
   ]
 
   return (
@@ -35,13 +35,23 @@ export const Home = () => {
           </h2>
 
           <div className="grid grid-cols-[repeat(5,max-content)] gap-x-5 gap-y-3 justify-start ml-2">
-            {/* Rock */}
+
+            {genres.map(g => (
             
-            {genres.map(g => <GenreCard key={g.name} {...g} />)}
-
+                <div key={g.slug} className="flex flex-col items-center">
+                  
+                    <span className="mt-2 font-semibold text-white">{g.name}</span>
+                    <Link to={`/genre/${g.slug}`}>
+                    <div className="w-[120px] h-[120px] rounded-2xl overflow-hidden border border-white/10 bg-gray-800">
+                       <img src={g.img} alt={g.name} className="w-full h-full object-cover" />
+                    </div>
+                    </Link>
+                  
+                </div>
+                
+             
+            ))}            
           </div>
-
         </div>
-     
   );
 };
