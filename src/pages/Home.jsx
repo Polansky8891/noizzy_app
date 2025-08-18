@@ -26,6 +26,14 @@ export const Home = () => {
     { name: "Jazz", img: jazzImg, slug:"jazz"}
   ]
 
+  const prefetch = async (slug) => {
+  const genre = SLUG_TO_GENRE[slug];
+  const k = `tracks:${genre}`;
+  if (sessionStorage.getItem(k)) return;
+  const res = await axios.get(`/api/tracks`, { params: { genre } });
+  sessionStorage.setItem(k, JSON.stringify(res.data?.items ?? []));
+};
+
   return (
     <div className="w-full h-full bg-black rounded-3xl">
       
