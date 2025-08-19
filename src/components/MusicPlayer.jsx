@@ -1,40 +1,149 @@
-import { FaPlay, FaStepForward, FaStepBackward, FaHeart } from 'react-icons/fa';
+import { FaPlay, FaStepForward, FaStepBackward, FaPause } from 'react-icons/fa';
+import { IoMdVolumeOff,IoMdVolumeMute  } from "react-icons/io";
 import { useState } from 'react';
+import { usePlayer } from './PlayerContext';
 
 export const MusicPlayer = () => {
-  const [progress, setProgress] = useState(42); // segundos
-  const duration = 215;
 
-  const formatTime = (time) => {
+  const {
+    currentTrack,
+    isPlaying,
+    progress,
+    duration,
+    playTrack,
+    pauseTrack,
+    seek,
+    skipForward,
+    skipBackward,
+    volume,
+    setVolume,
+    muted,
+    toggleMute
+  } = usePlayer();
+
+  const fmt = (time) => {
+    if (!Number.isFinite(time)) return "0:00";
     const mins = Math.floor(time / 60);
-    const secs = ('0' + (time % 60)).slice(-2);
+    const secs = String(Math.floor(time % 60)).padStart(2, "0");
     return `${mins}:${secs}`;
   };
 
+  const pct = duration ? (progress / duration) * 100 : 0;
+
+  const handleBarClick = (e) => {
+    if (!duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, x / rect.width));
+    seek(ratio * duration);
+  };
+
+
+  const togglePlay = () => {
+    if (!currentTrack) return;
+    if (isPlaying) {
+      pauseTrack();
+    } else {
+      if (duration && progress >= duration - 0.25) seek(0);
+      playTrack(currentTrack);
+    }
+  };
+
+  const controlsDisabled = !currentTrack;
+  
   return (
-    <div className="w-full bg-black backdrop-blur-md py-6 px-6 flex flex-col items-center justify-center shadow-lg rounded-3xl border-2 border-[#1C1C1C]">
-      {/* Barra superior: tiempos y progreso */}
-      <div className="flex items-center w-full max-w-2xl mb-3 text-xs text-[#1DF0D8]">
-        <span className="w-12 text-left">{formatTime(progress)}</span>
-        <div className="flex-1 h-2 mx-2 bg-gradient-to-r from-gray-600 to-gray-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#1DF0D8] rounded-full transition-all"
-            style={{ width: `${(progress / duration) * 100}%`,
-                     color: '#1DF0D8'
-          }}
-          ></div>
+    <div className='w-full bg-blck backdrop-blur-md p7-6 px-6 flex flex-col items-center justify-center shadow-lg rounded-3xl border-2 border-[#1C1C1C]'>
+      <div className='w-full max-w-2xl mb-2 flex items-center gap-3'>
+       
+        <div className='min-w-0'>
+          <div className='text-white text-sm truncate'>{currentTrack?.title}</div>
+          <div className='text-xs text-gray-400 truncate'>{currentTrack?.artist || ""}</div>
         </div>
-        <span className="w-12 text-right">{formatTime(duration)}</span>
       </div>
 
-      {/* Controles en burbuja */}
-      <div className="flex items-center space-x-6 bg-[#1C1C1C] px-6 py-3 rounded-2xl shadow-inner backdrop-blur-sm">
-        <FaStepBackward className="text-[#1DF0D8] hover:text-white cursor-pointer text-lg" />
-        <button className="bg-#1DF0D8 border-1 border-[#1DF0D8] text-[#1DF0D8] p-3 rounded-full cursor-pointer shadow-md transition hover:text-white hover:border-white">
-          <FaPlay />
+      <div className='flex items-center w-full max-w-2xl mb-3 text-xs text-[#1DF0D8] select-none'>
+        <span className='w-12 text-left'>{fmt(progress)}</span>
+        <div
+          className='flex-1 h-2 mx-2 bg-gradient-to-r from-gray-600 to-gray-800 rounded-full overflow-hidden cursor-pointer'
+          onClick={handleBarClick}
+          aria-label='Barra de progreso'
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={duration || 0}
+          aria-valuenow={progress || 0}
+        >
+          <div 
+            className='h-full bg-[#1DF0D8] rounded-full transition-all'
+            style={{ width: `${pct}%`}}
+          />
+        </div>
+        <span className='w-12 text-right'>{fmt(duration)}</span>
+      </div>
+
+      <div className='flex items-center space-x-6 bg-[#1C1C1C] px-6 py-3 rounded-2xl shadow-inner backdrop-blur-sm'>
+        <button
+          onClick={() => skipBackward(10)}
+          disabled={controlsDisabled}
+          className='disabled:opacity-40 disabled:cursor-not-allowed'
+          title="Retroceder 10s"
+          aria-label="Retroceder 10 segundos"
+        >
+          <FaStepBackward className='text-[#1DF0D8] hover:text-white cursor-pointer text-lg' />
         </button>
-        <FaStepForward className="text-[#1DF0D8] hover:text-white cursor-pointer text-lg" />
-        <FaHeart className="text-[#1DF0D8] hover:text-white cursor-pointer text-base ml-3" />
+
+        <button
+          onClick={togglePlay}
+          disabled={controlsDisabled}
+          className='border border-[#1DF0D8] text-[#1DF0D8] p-3 rounded-full cursor-pointer shadow-md transition hover:text-white hover:border-white disabled:opacity-40 disabled:cursor-not-allowed'
+          aria-label={isPlaying ? "Pausar" : "Reproducir"}
+        >
+          {isPlaying ? <FaPause /> : <FaPlay />}
+        </button>
+
+        <button
+          onClick={() =>skipForward(10)}
+          disabled={controlsDisabled}
+          className='disabled:opacity-40 disabled:cursor-not-allowed'
+          title="Avanzar 10s"
+          aria-label="Avanzar 10 segundos"
+        >
+          <FaStepForward className='text-[#1DF0D8] hover:text-white cursor-pointer text-base' />
+        </button>
+
+        <div className="h-6 w-px bg-white/10 mx-1" />
+
+        <button
+          onClick={toggleMute}
+          disabled={controlsDisabled}
+          className="disabled:opacity-40 disabled:cursor-not-allowed"
+          aria-pressed={muted}
+          title={muted ? "Quitar silencio" : "Silenciar"}
+          aria-label={muted ? "Quitar silencio" : "Silenciar"}
+        >
+          {muted || volume === 0 ? (
+            <IoMdVolumeOff className="text-[#1DF0D8] hover:text-white text-lg" />
+          ) : (
+            <IoMdVolumeMute className="text-[#1DF0D8] hover:text-white text-lg" />
+          )}
+        </button>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={volume}
+            onChange={(e) => setVolume(+e.target.value)}
+            disabled={controlsDisabled}
+            className="w-32 accent-[#1DF0D8] disabled:opacity-40"
+            aria-label="Volumen"
+          />
+          <span className="text-xs text-gray-400 w-10 text-right">
+            {Math.round(volume * 100)}%
+          </span>
+        </div>
+
       </div>
     </div>
   );
