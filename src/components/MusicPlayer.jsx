@@ -1,7 +1,7 @@
 import { FaPlay, FaStepForward, FaStepBackward, FaPause } from 'react-icons/fa';
 import { IoMdVolumeOff,IoMdVolumeMute  } from "react-icons/io";
-import { useState } from 'react';
 import { usePlayer } from './PlayerContext';
+import { FavButton } from './FavButton';
 
 export const MusicPlayer = () => {
 
@@ -52,33 +52,44 @@ export const MusicPlayer = () => {
   const controlsDisabled = !currentTrack;
   
   return (
-    <div className='w-full bg-blck backdrop-blur-md p7-6 px-6 flex flex-col items-center justify-center shadow-lg rounded-3xl border-2 border-[#1C1C1C]'>
-      <div className='w-full max-w-2xl mb-2 flex items-center gap-3'>
-       
-        <div className='min-w-0'>
-          <div className='text-white text-sm truncate'>{currentTrack?.title}</div>
-          <div className='text-xs text-gray-400 truncate'>{currentTrack?.artist || ""}</div>
+    <div className="w-full bg-black backdrop-blur-md py-6 px-6 flex flex-col items-center justify-center shadow-lg rounded-3xl border-2 border-[#1C1C1C]">
+      {/* Fila 1: título + artista + corazón centrados */}
+  <div className="w-full max-w-2xl mb-2 flex items-center justify-center">
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="min-w-0 text-center">
+        <div className="text-white text-sm truncate max-w-[min(80vw,36rem)]">
+          {currentTrack?.title}
+        </div>
+        <div className="text-xs text-gray-400 truncate max-w-[min(80vw,36rem)]">
+          {currentTrack?.artist || ""}
         </div>
       </div>
+      {currentTrack && <FavButton trackId={currentTrack.id} size={18} />}
+    </div>
+  </div>
 
-      <div className='flex items-center w-full max-w-2xl mb-3 text-xs text-[#1DF0D8] select-none'>
-        <span className='w-12 text-left'>{fmt(progress)}</span>
-        <div
-          className='flex-1 h-2 mx-2 bg-gradient-to-r from-gray-600 to-gray-800 rounded-full overflow-hidden cursor-pointer'
-          onClick={handleBarClick}
-          aria-label='Barra de progreso'
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={duration || 0}
-          aria-valuenow={progress || 0}
-        >
-          <div 
-            className='h-full bg-[#1DF0D8] rounded-full transition-all'
-            style={{ width: `${pct}%`}}
-          />
-        </div>
-        <span className='w-12 text-right'>{fmt(duration)}</span>
-      </div>
+  {/* Fila 2: barra + tiempos (alineada con la de arriba) */}
+  <div className="w-full max-w-2xl mb-3 flex items-center text-xs text-[#1DF0D8] select-none">
+    <span className="w-12 text-left">{fmt(progress)}</span>
+
+    <div
+      className="flex-1 h-2 mx-2 bg-gradient-to-r from-gray-600 to-gray-800 rounded-full overflow-hidden cursor-pointer"
+      onClick={handleBarClick}
+      role="progressbar"
+      aria-label="Barra de progreso"
+      aria-valuemin={0}
+      aria-valuemax={duration || 0}
+      aria-valuenow={progress || 0}
+    >
+      <div
+        className="h-full bg-[#1DF0D8] rounded-full transition-all"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+
+    <span className="w-12 text-right">{fmt(duration)}</span>
+  </div>
+
 
       <div className='flex items-center space-x-6 bg-[#1C1C1C] px-6 py-3 rounded-2xl shadow-inner backdrop-blur-sm'>
         <button

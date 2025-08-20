@@ -25,9 +25,26 @@ import { Reggae } from './pages/Reggae';
 import { House } from './pages/House';
 import { Jazz } from './pages/Jazz';
 import { GenreCard } from './components/GenreCard';
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { resetFavorites } from './store/favoritesSlice';
+import { fetchFavorites } from './store/favoritesSlice';
 
 
 export const App = () => {
+
+  const dispatch = useDispatch();
+  const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchFavorites());
+    } else {
+      dispatch(resetFavorites());
+    }
+  }, [isAuthenticated, dispatch]);
+
+
   return (
     <BrowserRouter>
     <div className="flex h-screen w-screen bg-black overflow-hidden">
