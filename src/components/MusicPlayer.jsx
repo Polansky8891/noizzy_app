@@ -57,10 +57,10 @@ export const MusicPlayer = () => {
   <div className="w-full max-w-2xl mb-2 flex items-center justify-center">
     <div className="flex items-center gap-2 min-w-0">
       <div className="min-w-0 text-center">
-        <div className="text-white text-sm truncate max-w-[min(80vw,36rem)]">
+        <div className="text-[#1DF0D8] text-sm truncate max-w-[min(80vw,36rem)]">
           {currentTrack?.title}
         </div>
-        <div className="text-xs text-gray-400 truncate max-w-[min(80vw,36rem)]">
+        <div className="text-xs text-[#1DF0D8] truncate max-w-[min(80vw,36rem)]">
           {currentTrack?.artist || ""}
         </div>
       </div>

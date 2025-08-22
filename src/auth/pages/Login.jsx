@@ -1,52 +1,42 @@
-import { useState } from 'react';
-import { startGoogleSignIn }  from '../../store/auth/thunks';
-import { useDispatch } from 'react-redux';
-import { axiosInstance } from '../../api/axiosInstance';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-
+import { axiosInstance } from '../../api/axiosInstance';
+import { signInWithPopup } from 'firebase/auth';
+import { FirebaseAuth, GoogleProvider } from '../../firebase/config'; // asegúrate de exportar estos en config
 
 export const Login = () => {
-
-  
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [errorMsg, setErrorMsg] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState(localStorage.getItem('email') || '');
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { status, errorMessage } = useSelector((s) => s.auth);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const handleSubmit = async(e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg(null);
-    
+
     try {
       const { data } = await axiosInstance.post('/auth', formData);
 
-      // verify if we have received the token correctly
-      if (!data.token) {
-        throw new Error('Token not received');
-      }
+      if (!data.token) throw new Error('Token not received');
 
-      // save token and optional data
       localStorage.setItem('token', data.token);
       localStorage.setItem('uid', data.uid);
       localStorage.setItem('name', data.name);
 
-
       navigate('/');
-      
     } catch (error) {
       const message = error.response?.data?.msg || 'Login failed';
       setErrorMsg(message);
@@ -54,9 +44,16 @@ export const Login = () => {
   };
 
   const onGoogleSignIn = () => {
-
-    dispatch( startGoogleSignIn() );
-    
+    signInWithPopup(FirebaseAuth, GoogleProvider).then((data) => {
+      console.log("Google login data:", data);
+      console.log("User:", data.user);
+      setGoogleEmail(data.user.email);
+      localStorage.setItem('email', data.user.email);
+      localStorage.setItem('photoURL', data.user.photoURL || data.user.providerData?.[0]?.photoURL || '');
+      localStorage.setItem('uid', data.user.uid);
+      localStorage.setItem('displayName', data.user.displayName);
+      navigate('/'); 
+    });
   };
 
   return (
@@ -73,24 +70,23 @@ export const Login = () => {
               value={formData.email}
               onChange={handleChange}
             />
-            <div className='relative w-full'>
+            <div className="relative w-full">
               <input
-              className="bg-gray-200 text-black border-0 rounded-md p-2 w-full"
-              placeholder="Password"
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-            />
-            <button
-              type='button'
-              onClick={() => setShowPassword(!showPassword)}
-              className='absolute right-3 top-1/2 tranform -translate-y-1/2 text-gray-600 hover:text-gray-800'
-            >
-              {showPassword ? <FaEye /> : <FaEyeSlash />}
-            </button>
+                className="bg-gray-200 text-black border-0 rounded-md p-2 w-full"
+                placeholder="Password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+              >
+                {showPassword ? <FaEye /> : <FaEyeSlash />}
+              </button>
             </div>
-            
           </div>
 
           {errorMsg && <p className="text-red-600 text-sm mb-4">{errorMsg}</p>}

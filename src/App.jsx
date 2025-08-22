@@ -1,6 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import { Nav } from './components/Nav';
 import { Home } from './pages/Home';
 import { Library } from './pages/Library';
 import { Register } from './auth/pages/Register';
@@ -29,6 +28,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { resetFavorites } from './store/favoritesSlice';
 import { fetchFavorites } from './store/favoritesSlice';
+import AuthListener from './store/auth/AuthListener';
 
 
 export const App = () => {
@@ -46,7 +46,9 @@ export const App = () => {
 
 
   return (
+    
     <BrowserRouter>
+    <AuthListener />
     <div className="flex h-screen w-screen bg-black overflow-hidden">
     {/* Sidebar fijo a la izquierda */}
     <SideBar />
@@ -55,6 +57,7 @@ export const App = () => {
     <div className="flex-1 min-w-0 flex flex-col">
       <main className="flex-1 overflow-y-auto p-2">
         <Routes>
+            
               <Route path="/" element={<Home />} />
               <Route path="/library" element={<Library />} />
               <Route path="/profile" element={<Register />} />
@@ -77,7 +80,7 @@ export const App = () => {
               <Route path="/house" element={<House/>} />
               <Route path="/jazz" element={<Jazz/>} />
               <Route path="/genre/:slug" element={<GenreCard />} />
-            </Routes>
+         </Routes>
       </main>
       <MusicPlayer/>
     </div>
