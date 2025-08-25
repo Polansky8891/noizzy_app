@@ -3,13 +3,14 @@ import axios from "axios";
 
 const initialState = {
     ids: [],
+    items: [],
     loading: false,
     error: null
 };
 
-export const fetchFavorites = createAsyncThunk('favorites/fetch', async () => {
+export const fetchFavoriteTracks = createAsyncThunk('favorites/fetchTracks', async () => {
     const { data } = await axios.get('/api/me/favorites');
-    return data.map((t) => t._id || t.id);
+    return data;
 });
 
 export const addFavorite = createAsyncThunk('favorites/add', async (trackId) => {
@@ -31,27 +32,29 @@ const favoritesSlice = createSlice({
             const id = action.payload;
             if (state.ids.includes(id)) {
                 state.ids = state.ids.filter(x => x !== id);
+                state.items = state.items.filter(t => (t._id || t.id) !== id);
             } else {
                 state.ids.push(id);
             }
         },
         resetFavorites(state) {
             state.ids = [];
+            state.items = [];
             state.error = null;
             state.loading = false;
         }
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchFavorites.pending, (s) => {
+            .addCase(fetchFavoriteTracks.pending, (s) => {
                 s.loading = true;
                 s.error = null;
             })
-            .addCase(fetchFavorites.fulfilled, (s, a) => {
+            .addCase(fetchFavoriteTracks.fulfilled, (s, a) => {
                 s.loading = false;
                 s.ids = a.payload;
             })
-            .addCase(fetchFavorites.rejected, (s, a) => {
+            .addCase(fetchFavoriteTracks.rejected, (s, a) => {
                 s.loading = false;
                 s.error = a.error.message || 'Error';
             })
@@ -59,7 +62,9 @@ const favoritesSlice = createSlice({
                 if (!s.ids.includes(a.payload)) s.ids.push(a.payload);
             })
             .addCase(removeFavorite.fulfilled, (s, a) => {
-                s.ids = s.ids.filter(id => id !== a.payload);
+                const id = a.payload;
+                s.ids = s.ids.filter(x => x !== id);
+                s.items = s.items.filter(t => (t._id || t.id) !== id);
             });
     }
 
@@ -67,3 +72,6 @@ const favoritesSlice = createSlice({
 
 export const { toggleLocal, resetFavorites } = favoritesSlice.actions;
 export default favoritesSlice.reducer;
+
+export const selectFavoriteTracks = (s) => s.favorites.items;
+export const selectFavoritesLoading = (s) => s.favorites.loading;

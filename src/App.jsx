@@ -27,8 +27,9 @@ import { GenreCard } from './components/GenreCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { resetFavorites } from './store/favoritesSlice';
-import { fetchFavorites } from './store/favoritesSlice';
+import { fetchFavoriteTracks } from './store/favoritesSlice';
 import AuthListener from './store/auth/AuthListener';
+import { Favorites } from './pages/Favorites';
 
 
 export const App = () => {
@@ -38,7 +39,7 @@ export const App = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(fetchFavorites());
+      dispatch(fetchFavoriteTracks());
     } else {
       dispatch(resetFavorites());
     }
@@ -80,6 +81,7 @@ export const App = () => {
               <Route path="/house" element={<House/>} />
               <Route path="/jazz" element={<Jazz/>} />
               <Route path="/genre/:slug" element={<GenreCard />} />
+              <Route path="/favorites" element={<Favorites />} />
          </Routes>
       </main>
       <MusicPlayer/>
