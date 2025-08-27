@@ -27,28 +27,22 @@ export const Favorites = () => {
     const dispatch = useDispatch();
     const tracks = useSelector(selectFavoriteTracks);
     const loading = useSelector(selectFavoritesLoading);
-    const isAuth = useSelector(s => s.auth.isAuthenticated);
+    const isAuth = useSelector(s => s.auth.status === 'authenticated');
+    const hasToken = !!localStorage.getItem('token');
 
     const { playTrack, currenTrack } = usePlayer();
     const [firstLoad, setFirstLoad] = useState(true);
 
     useEffect(() => {
-        let ignore = false;
-        if (!isAuth) return;
-        (async () => {
-            try {
-                await dispatch(fetchFavoriteTracks());
-            } finally {
-                if (!ignore) setFirstLoad(false);
-            }
-        })();
-        return () => { ignore = true; };
-    }, [dispatch, isAuth]);
+        if (!isAuth || !hasToken) return;
+        dispatch(fetchFavoriteTracks());
+    }, [dispatch, isAuth, hasToken]);
 
     const handlePlayRow = (row) => {
         const audioPath = toAbsoluteUrl(row.audioUrl);
         if (!audioPath) return;
         playTrack({
+            id: row._id || row.id,
             title: row.title,
             artist: row.artist,
             audioPath,

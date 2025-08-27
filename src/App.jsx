@@ -30,6 +30,8 @@ import { resetFavorites } from './store/favoritesSlice';
 import { fetchFavoriteTracks } from './store/favoritesSlice';
 import AuthListener from './store/auth/AuthListener';
 import { Favorites } from './pages/Favorites';
+import { FirebaseAuth } from './firebase/config';
+
 
 
 export const App = () => {
@@ -44,6 +46,12 @@ export const App = () => {
       dispatch(resetFavorites());
     }
   }, [isAuthenticated, dispatch]);
+
+  useEffect(() => {
+    // 👇 sólo para pruebas
+    window.FirebaseAuth = FirebaseAuth;
+    console.log('[debug] window.FirebaseAuth listo:', !!window.FirebaseAuth);
+  }, []);
 
 
   return (

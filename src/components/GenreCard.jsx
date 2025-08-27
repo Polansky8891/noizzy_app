@@ -111,6 +111,7 @@ export const GenreCard = () => {
     return;
   }
   playTrack({
+    id: row._id || row.id,
     title: row.title,
     artist: row.artist,
     audioPath,                                      

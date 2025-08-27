@@ -11,34 +11,19 @@ const initialState = {
 
 export const authSlice = createSlice({
     name: 'auth',
-    initialState: {
-        status: 'checking',
-        uid: null,
-        email: null,
-        displayName: null,
-        photoURL: null,
-        errorMessage: undefined
-    },
+    initialState,
     reducers: {
         login: ( state, { payload } ) => {
             state.status = 'authenticated';
-            state.uid = payload.uid;
-            state.email = payload.email;
-            state.displayName = payload.displayName;
-            state.photoURL = payload.photoURL;
+            state.uid = payload.uid || null;
+            state.email = payload.email || null;
+            state.displayName = payload.displayName || null;
+            state.photoURL = payload.photoURL || null;
             state.errorMessage = null;
         },
-        logout: ( state, { payload } ) => {
-            state.status = 'not-authenticated';
-            state.uid = null;
-            state.email = null;
-            state.displayName = null;
-            state.photoURL = null;
-            state.errorMessage = payload?.errorMessage;
-        },
+        logout: () => initialState,
         checkingCredentials: (state) => {
             state.status = 'checking';
-            state.user = {};
             state.errorMessage = undefined;
         }
 
@@ -46,5 +31,7 @@ export const authSlice = createSlice({
 });
 
 export const { login, logout, checkingCredentials } = authSlice.actions;
-
 export default authSlice.reducer;
+
+export const selectIsAuthenticated = (s) => s.auth.status === 'authenticated';
+export const selectAuth = (s) => s.auth;

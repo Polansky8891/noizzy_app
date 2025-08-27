@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { axiosInstance } from '../../api/axiosInstance';
@@ -12,7 +12,6 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [googleEmail, setGoogleEmail] = useState(localStorage.getItem('email') || '');
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { status, errorMessage } = useSelector((s) => s.auth);
 
@@ -43,17 +42,41 @@ export const Login = () => {
     }
   };
 
-  const onGoogleSignIn = () => {
-    signInWithPopup(FirebaseAuth, GoogleProvider).then((data) => {
-      console.log("Google login data:", data);
-      console.log("User:", data.user);
-      setGoogleEmail(data.user.email);
-      localStorage.setItem('email', data.user.email);
-      localStorage.setItem('photoURL', data.user.photoURL || data.user.providerData?.[0]?.photoURL || '');
-      localStorage.setItem('uid', data.user.uid);
-      localStorage.setItem('displayName', data.user.displayName);
-      navigate('/'); 
-    });
+  const onGoogleSignIn = async () => {
+    setErrorMsg(null);
+    try {
+      const cred = await signInWithPopup(FirebaseAuth, GoogleProvider);
+      console.log('[Login] popup ok, user:', cred.user?.uid);
+
+      const idToken = await cred.user.getIdToken();
+      console.log('[Login] idToken len:', idToken?.length);
+
+      console.log('[Login] voy a POST /auth/google');
+
+      const { data } = await axiosInstance.post(
+        '/auth/google',
+        { idToken },
+        { meta: { skipAuthRedirect: true } } 
+      );
+
+      console.log('[Login] /auth/google resp:', data);
+
+
+      if (!data?.token) throw new Error('Token not received from API');
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('uid', cred.user.uid);
+      localStorage.setItem('name', cred.user.displayName || '');
+      localStorage.setItem('email', cred.user.email || '');
+      localStorage.setItem('photoURL', cred.user.photoURL || cred.user.providerData?.[0]?.photoURL || '');
+
+      navigate('/');
+    } catch (error) {
+      console.error('[Login] GoogleSignIn error status:', error?.response?.status);
+      console.error('[Login] GoogleSignIn error data:', error?.response?.data);
+      console.error('[Login] GoogleSignIn error msg:', error?.message);
+      setErrorMsg('Google sign-in failed'); 
+    }     
   };
 
   return (

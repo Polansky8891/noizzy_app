@@ -1,9 +1,15 @@
 import { createContext, useState, useContext, useRef, useEffect, useCallback } from "react"
-import { BsSkipBackward } from "react-icons/bs";
 
 const PlayerContext = createContext();
-
 export const usePlayer = () => useContext(PlayerContext);
+
+const normalizeTrack = (t = {}) => ({
+    id: String(t.id || t._id || ''),
+    title: t.title || '',
+    artist: t.artist || '',
+    audioPath: t.audioPath || t.audioUrl || '',
+    cover: t.cover || t.coverUrl || t.image || null,
+});
 
 export const PlayerProvider = ({ children }) => {
     const audioRef = useRef(new Audio());
@@ -26,8 +32,6 @@ export const PlayerProvider = ({ children }) => {
             console.error("[Audio error]", err, "src:", a.src);
         };
         a.addEventListener("error", onError);
-        a.removeEventListener("error", onError);
-
         a.addEventListener("timeupdate", onTimeUpdate);
         a.addEventListener("loadedmetadata", onLoaded);
         a.addEventListener("play", onPlay);
@@ -40,17 +44,20 @@ export const PlayerProvider = ({ children }) => {
             a.removeEventListener("play", onPlay);
             a.removeEventListener("pause", onPause);
             a.removeEventListener("ended", onEnded);
+            a.removeEventListener("error", onError);
         };
     }, []);
 
     const playTrack = useCallback(async (track) => {
         const a = audioRef.current;
+        const t = normalizeTrack(track);
+
         if (!currentTrack || currentTrack.audioPath !== track.audioPath) {
             a.src = track.audioPath;
-            setCurrentTrack(track);
+            setCurrentTrack(t);
             setProgress(0);
         }
-        await a.play().catch(() => {});
+         try {await a.play(); } catch {}
     }, [currentTrack]);
 
     const pauseTrack = () => {
@@ -101,7 +108,7 @@ export const PlayerProvider = ({ children }) => {
             volume,
             setVolume,
             muted,
-            toggleMute
+            toggleMute,
         }}
     >
         {children}

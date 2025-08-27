@@ -7,11 +7,30 @@ export const FavButton = ({ trackId, size = 16, className = ''}) => {
     const dispatch = useDispatch();
     const favs = useSelector((s) => s.favorites.ids);
     const isFav = favs.includes(trackId);
-    const isAuth = useSelector((s) => s.auth.isAuthenticated);
+    const isAuth = useSelector((s) => s.auth.status === 'authenticated');
 
     const onToggle = async (e) => {
         e.stopPropagation();
-        if (!isAuth) return;
+
+        const apiToken = localStorage.getItem('token');
+
+        console.log('[FavButton] click ->', {
+            trackId,
+            isAuth,               // ojo: si tu slice usa status, mejor: useSelector(s => s.auth.status==='authenticated')
+            isFav,
+            hasApiToken: !!apiToken
+        });
+
+        if (!isAuth || !trackId || !apiToken) {
+
+        console.warn('[FavButton] bloqueado por guard:', {
+            noAuth: !isAuth,
+            noTrackId: !trackId,
+            noToken: !apiToken,
+        });
+
+          return;
+        } 
 
         dispatch(toggleLocal(trackId));
         try {

@@ -21,6 +21,8 @@ export const MusicPlayer = () => {
     toggleMute
   } = usePlayer();
 
+  const trackId = currentTrack?._id || currentTrack?.id;
+
   const fmt = (time) => {
     if (!Number.isFinite(time)) return "0:00";
     const mins = Math.floor(time / 60);
@@ -64,7 +66,8 @@ export const MusicPlayer = () => {
           {currentTrack?.artist || ""}
         </div>
       </div>
-      {currentTrack && <FavButton trackId={currentTrack.id} size={18} />}
+      {currentTrack && <FavButton trackId={trackId} size={18} />}
+      
     </div>
   </div>
 
