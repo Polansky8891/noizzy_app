@@ -3,17 +3,18 @@ import DataTable from "react-data-table-component";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchFavoriteTracks, removeFavorite, selectFavoriteTracks, selectFavoritesLoading } from "../store/favoritesSlice";
 import { FavButton } from "../components/FavButton";
-import { useNavigate } from "react-router-dom";
 import { usePlayer } from "../components/PlayerContext";
+import { FiTrash2 } from 'react-icons/fi';
 
 
-const API_URL = import.meta.env.VITE_API_URL || 'https//localhost:4000/api';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:4000/api';
 const MEDIA_BASE = import.meta.env.VITE_MEDIA_BASE_URL || API_URL;
 
 const fmt = (sec) => {
         const s = Math.floor(sec || 0);
         const m = Math.floor( s / 60);
-        const r = s % 60;
+        const r = String(s % 60).padStart(2, '0');
         return `${m}:${r}`;
     }
 
@@ -30,12 +31,25 @@ export const Favorites = () => {
     const isAuth = useSelector(s => s.auth.status === 'authenticated');
     const hasToken = !!localStorage.getItem('token');
 
-    const { playTrack, currenTrack } = usePlayer();
+    const { playTrack, currentTrack } = usePlayer();
     const [firstLoad, setFirstLoad] = useState(true);
 
     useEffect(() => {
-        if (!isAuth || !hasToken) return;
-        dispatch(fetchFavoriteTracks());
+        let ignore = false;
+
+        const load = async () => {
+            if (!isAuth || !hasToken) return;
+            try {
+                await dispatch(fetchFavoriteTracks());
+            } finally {
+                if (!ignore) setFirstLoad(false);
+            }
+        };
+
+        load();
+        return () => {
+            ignore = true;
+        };
     }, [dispatch, isAuth, hasToken]);
 
     const handlePlayRow = (row) => {
@@ -62,22 +76,32 @@ export const Favorites = () => {
         },
         {
             name: "",
-            right: true,
-            grow: 0,
-            maxWidth: "120px",
-            cell: (r) => {
-                const id = r._id || r.id;
-                return (
-                    <div className="flex items-center justify-end gap-2">
-                        <FavButton trackId={id} />
-                        <button
-                            onClick={(e) => {e.stopPropagation(); dispatch(removeFavorite(id));}}
-                            className="text-xs px-3 py-1 rounded-full border border-white/20 hover:border-white/50"
-                            title="Remove from favourites"
-                        >
-                            Remove
-                        </button>
-                    </div>
+  right: true,
+  grow: 0,
+  width: "88px",          
+  wrap: false,
+  ignoreRowClick: true,    
+  allowOverflow: true,     
+  button: true,            
+  cell: (r) => {
+    const id = r._id || r.id;
+    return (
+      <div className="flex items-center justify-end gap-2">
+        
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+       
+            dispatch(removeFavorite(id));
+          }}
+          title="Remove from favourites"
+          aria-label="Remove from favourites"
+          className="group p-2 rounded-full border border-white/10"
+        >
+          <FiTrash2 className="w-4 h-4 text-black/70 group-hover:text-white" />
+        </button>
+      </div>
                 );
             },
         }
@@ -89,12 +113,12 @@ export const Favorites = () => {
 
     const conditionalRowStyles = [
         {
-            when: (r) => currenTrack && toAbsoluteUrl(r.audioUrl) === currenTrack.audioPath,
-            style: { backgroundColor: "rgba(29, 240, 216, 0.08)" },
+            when: (r) => currentTrack && toAbsoluteUrl(r.audioUrl) === currentTrack.audioPath,
+           
         },
     ];
 
-    if (!isAuth) {
+    if (!isAuth || !hasToken) {
         return ( 
             <div className="p-4 text-gray-300">
                   You must login to see your favourites.  

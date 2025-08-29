@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { axiosInstance } from '../../api/axiosInstance';
 import { signInWithPopup } from 'firebase/auth';
-import { FirebaseAuth, GoogleProvider } from '../../firebase/config'; // asegúrate de exportar estos en config
+import { FirebaseAuth, GoogleProvider } from '../../firebase/config'; 
+import { login } from '../../store/auth/authSlice';
 
 export const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errorMsg, setErrorMsg] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [googleEmail, setGoogleEmail] = useState(localStorage.getItem('email') || '');
+  const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { status, errorMessage } = useSelector((s) => s.auth);
 
   const handleChange = (e) => {
@@ -25,20 +28,37 @@ export const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSubmitting(true);
 
     try {
-      const { data } = await axiosInstance.post('/auth', formData);
+      const { data } = await axiosInstance.post('/auth', formData, {
+        meta: { skipAuthRedirect: true }
+      });
 
+      const { token, uid, name, email, photoURL } = data || {};
       if (!data.token) throw new Error('Token not received');
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('uid', data.uid);
-      localStorage.setItem('name', data.name);
+      localStorage.setItem('token', token);
+      localStorage.setItem('uid', uid);
+      localStorage.setItem('name', name || '');
+      if (email) localStorage.setItem('email', email);
+      if (photoURL) localStorage.setItem('photoURL', photoURL);
+
+      dispatch(
+        login({
+          uid,
+          email: email || formData.email,
+          displayName: name || '',
+          photoURL: photoURL || null
+        })
+      );
 
       navigate('/');
     } catch (error) {
       const message = error.response?.data?.msg || 'Login failed';
       setErrorMsg(message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -46,12 +66,9 @@ export const Login = () => {
     setErrorMsg(null);
     try {
       const cred = await signInWithPopup(FirebaseAuth, GoogleProvider);
-      console.log('[Login] popup ok, user:', cred.user?.uid);
-
       const idToken = await cred.user.getIdToken();
+      console.log('[Login] popup ok, user:', cred.user?.uid);
       console.log('[Login] idToken len:', idToken?.length);
-
-      console.log('[Login] voy a POST /auth/google');
 
       const { data } = await axiosInstance.post(
         '/auth/google',
@@ -70,6 +87,7 @@ export const Login = () => {
       localStorage.setItem('email', cred.user.email || '');
       localStorage.setItem('photoURL', cred.user.photoURL || cred.user.providerData?.[0]?.photoURL || '');
 
+      console.log('[Login] token saved?', !!localStorage.getItem('token'));
       navigate('/');
     } catch (error) {
       console.error('[Login] GoogleSignIn error status:', error?.response?.status);
@@ -117,9 +135,10 @@ export const Login = () => {
           <div className="flex space-x-2">
             <button
               type="submit"
+              disabled={submitting}
               className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-md hover:from-indigo-600 hover:to-blue-600 transition w-full py-2 px-3"
             >
-              Sign In
+              {submitting ? 'Signing in...' : 'Sign In'}
             </button>
 
             <button

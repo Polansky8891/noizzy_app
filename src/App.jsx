@@ -58,7 +58,7 @@ export const App = () => {
     
     <BrowserRouter>
     <AuthListener />
-    <div className="flex h-screen w-screen bg-black overflow-hidden">
+    <div className="flex h-screen w-screen bg-black overflow-visible">
     {/* Sidebar fijo a la izquierda */}
     <SideBar />
 

@@ -7,9 +7,9 @@ export const SettingsMenu = ({ closeMenu }) => {
   return (
 
     <div 
-      className="absolute bottom-12 right-0 bg-black rounded-lg shadow-lg w-40 z-50"
+      className="bg-[#1C1C1C] text-white rounded-xl shadow-lg border border-white/10 p-3 w-56"
       >
-      <ul className="py-1">
+      <ul className="space-y-1">
         <li>
           <button
             onClick={() => {

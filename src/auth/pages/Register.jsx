@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { axiosInstance } from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useDispatch } from 'react-redux';
+import { login } from '../../store/auth/authSlice';
+import { fetchFavoriteTracks } from '../../store/favoritesSlice';
 
 export const Register = () => {
   const [form, setForm] = useState({
@@ -13,11 +16,11 @@ export const Register = () => {
   });
 
   const [errorMsg, setErrorMsg] = useState(null);
-
-  const navigate = useNavigate();
-
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const validate = () => {
     const newErrors = {};
@@ -72,6 +75,7 @@ export const Register = () => {
 
   const handleSubmit = async(e) => {
     e.preventDefault();
+    setErrorMsg(null);
 
     const isValid = validate();
     if (!isValid) return;
@@ -80,6 +84,24 @@ export const Register = () => {
 
     try {
       const { data } = await axiosInstance.post('/auth/new', { name, email, password });
+
+      if (!data?.token) throw new Error('Token not received');
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('uid', data.uid);
+      localStorage.setItem('name', data.name);
+      localStorage.setItem('email', email);
+
+      dispatch(
+        login({
+          uid: data.uid,
+          email,
+          displayName: data.name,
+          photoURL: null
+        })
+      );
+
+      dispatch(fetchFavoriteTracks());
 
       navigate('/');
       
