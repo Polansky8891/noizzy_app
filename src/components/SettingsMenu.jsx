@@ -1,8 +1,16 @@
 import { useNavigate } from "react-router-dom";
+import { logout } from "../store/auth/authSlice";
+import { useDispatch } from "react-redux";
 
 export const SettingsMenu = ({ closeMenu }) => {
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleClick = () => {
+    dispatch(logout());
+  }
+
 
   return (
 
@@ -34,37 +42,13 @@ export const SettingsMenu = ({ closeMenu }) => {
         </li>
         <li>
           <button
-            onClick={() => {
-              alert("Option 2 clicked");
-              closeMenu();
-            }}
+            onClick={handleClick}
             className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
           >
-            Option 3
+            Log out
           </button>
         </li>
-        <li>
-          <button
-            onClick={() => {
-              alert("Option 2 clicked");
-              closeMenu();
-            }}
-            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
-          >
-            Option 4
-          </button>
-        </li>
-        <li>
-          <button
-            onClick={() => {
-              alert("Option 2 clicked");
-              closeMenu();
-            }}
-            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
-          >
-            Option 5
-          </button>
-        </li>
+        
       </ul>
     </div>
   );
