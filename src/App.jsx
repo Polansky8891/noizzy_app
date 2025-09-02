@@ -31,6 +31,7 @@ import { fetchFavoriteTracks } from './store/favoritesSlice';
 import AuthListener from './store/auth/AuthListener';
 import { Favorites } from './pages/Favorites';
 import { FirebaseAuth } from './firebase/config';
+import { Stats } from './pages/Stats';
 
 
 
@@ -90,6 +91,7 @@ export const App = () => {
               <Route path="/jazz" element={<Jazz/>} />
               <Route path="/genre/:slug" element={<GenreCard />} />
               <Route path="/favorites" element={<Favorites />} />
+              <Route path="/stats" element={<Stats />} />
          </Routes>
       </main>
       <MusicPlayer/>
