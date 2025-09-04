@@ -23,58 +23,72 @@ export const Stats = () => {
   const token = getAuthToken();
 
   const fetchStats = useCallback(async (signal) => {
-    setLoading(true);
-    setError("");
-    try {
-      if (!token) {
-        throw new Error("No hay token de autenticación. ¿Has iniciado sesión?");
-      }
+  setLoading(true);
+  setError("");
 
-      const API = import.meta.env.VITE_API_BASE_URL || '';
-      const res = await fetch(`${API}/api/stats/summary?days=7`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-        signal,
-      });
-
-      // Manejo de estados HTTP
-      if (res.status === 204) {
-        // Sin contenido: setea vacío para que la UI no quede colgada
-        setData(emptySummary);
-        return;
-      }
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(
-          `Error API ${res.status} ${res.statusText}` +
-            (text ? ` – Detalle: ${text}` : "")
-        );
-      }
-
-      // Asegura JSON válido
-      const json = await res.json();
-      if (!json || typeof json !== "object") {
-        throw new Error("Respuesta de API no válida (no es JSON).");
-      }
-      setData({
-        days: json?.days ?? 0,
-        minutes: Math.round((json?.minutes ?? 0)),
-        plays: json?.plays ?? 0,
-        uniqueTracks: json?.uniqueTracks ?? 0,
-        topGenres: Array.isArray(json?.topGenres) ? json.topGenres : [],
-        daily: Array.isArray(json?.daily) ? json.daily : [],
-      });
-    } catch (err) {
-      console.error("[Stats] fetch error:", err);
-      setError(err.message || "Error desconocido obteniendo estadísticas.");
-      setData(null);
-    } finally {
+  try {
+    const token = getAuthToken(); // lee fresco en cada intento
+    if (!token) {
+      // No dispares fetch si aún no hay token
       setLoading(false);
+      return;
     }
-  }, [token]);
+
+    const API = import.meta.env.VITE_API_BASE_URL || "";
+    const res = await fetch(`${API}/api/stats/summary?days=7`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      signal,
+    });
+
+    if (res.status === 204) {
+      setData({
+        days: 7,
+        minutes: 0,
+        plays: 0,
+        uniqueTracks: 0,
+        topGenres: [],
+        daily: [],
+      });
+      return;
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `Error API ${res.status} ${res.statusText}` +
+        (text ? ` – Detalle: ${text}` : "")
+      );
+    }
+
+    const json = await res.json();
+    setData({
+      days: json?.days ?? 0,
+      minutes: Math.round(json?.minutes ?? 0),
+      plays: json?.plays ?? 0,
+      uniqueTracks: json?.uniqueTracks ?? 0,
+      topGenres: Array.isArray(json?.topGenres) ? json.topGenres : [],
+      daily: Array.isArray(json?.daily) ? json.daily : [],
+    });
+
+  } catch (err) {
+    // ⬇️ Abort no es un “error”; lo ignoramos silenciosamente
+    if (err && err.name === "AbortError") {
+      console.debug("[Stats] fetch aborted");
+      return;
+    }
+    console.error("[Stats] fetch error:", err);
+    setError(err.message || "Error desconocido obteniendo estadísticas.");
+    setData(null);
+  } finally {
+    // ⬇️ No toques estado si ya está abortado (evita warnings/flip-flops)
+    if (!signal?.aborted) setLoading(false);
+  }
+}, []);
+
 
   useEffect(() => {
     const ac = new AbortController();
