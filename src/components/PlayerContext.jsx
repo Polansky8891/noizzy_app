@@ -4,8 +4,8 @@ import { configureTickBuffer, startTicking, stopTicking } from "../utils/tickBuf
 const PlayerContext = createContext();
 export const usePlayer = () => useContext(PlayerContext);
 
-// TODO: adapta esto a tu auth real (Redux, contexto, etc.)
 const getAuthToken = () => localStorage.getItem("token");
+const API = import.meta.env.VITE_API_BASE_URL || '';
 
 export const PlayerProvider = ({ children }) => {
   const audioRef = useRef(new Audio());
@@ -43,7 +43,7 @@ export const PlayerProvider = ({ children }) => {
       const token = getAuthToken();
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = `Bearer ${token}`;
-      await fetch("/api/stats/play", {
+      await fetch(`${API}/api/stats/play`, {
         method: "POST",
         headers,
         body: JSON.stringify({ trackId: track._id, genre: track.genre }),
@@ -55,7 +55,7 @@ export const PlayerProvider = ({ children }) => {
   useEffect(() => {
     const getStateFn = () => ({ isPlaying: isPlayingRef.current, currentTrack: currentTrackRef.current });
     const getTokenFn = () => getAuthToken();
-    configureTickBuffer({ getStateFn, getTokenFn, endpoint: "/api/stats/tick" });
+    configureTickBuffer({ getStateFn, getTokenFn, endpoint: `${API}/api/stats/tick` });
     startTicking();
     return () => stopTicking();
   }, []);
