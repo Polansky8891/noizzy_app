@@ -6,23 +6,23 @@ import { axiosInstance } from '../../api/axiosInstance';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { FirebaseAuth, GoogleProvider } from '../../firebase/config'; 
 import { login } from '../../store/auth/authSlice';
+import { useLocation } from 'react-router-dom';
 
 export const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errorMsg, setErrorMsg] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState(localStorage.getItem('email') || '');
   const [submitting, setSubmitting] = useState(false);
+
+  const location = useLocation();                            // ← NUEVO
+  const from = location.state?.from?.pathname || '/';        // ← NUEVO
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { status, errorMessage } = useSelector((s) => s.auth);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -36,7 +36,7 @@ export const Login = () => {
       });
 
       const { token, uid, name, email, photoURL } = data || {};
-      if (!data.token) throw new Error('Token not received');
+      if (!token) throw new Error('Token not received');
 
       localStorage.setItem('token', token);
       localStorage.setItem('uid', uid);
@@ -53,7 +53,7 @@ export const Login = () => {
         })
       );
 
-      navigate('/');
+      navigate(from, { replace: true });                     // ← CAMBIO
     } catch (error) {
       const message = error.response?.data?.msg || 'Login failed';
       setErrorMsg(message);
@@ -66,20 +66,15 @@ export const Login = () => {
     setErrorMsg(null);
     try {
       const cred = await signInWithPopup(FirebaseAuth, GoogleProvider);
-      
+
       const gCred = GoogleAuthProvider.credentialFromResult(cred);
-      if (!gCred?.idToken) throw new Error ('No Google ID token in credential');
+      if (!gCred?.idToken) throw new Error('No Google ID token in credential');
       const idToken = gCred.idToken;
-
-      const payload = JSON.parse(atob(idToken.split('.')[1]));
-      console.log('[Google ID token] aud:', payload.aud, 'azp:', payload.azp, 'iss:', payload.iss, 'email:', payload.email);
-
-
 
       const { data } = await axiosInstance.post(
         '/auth/google',
         { idToken },
-        { meta: { skipAuthRedirect: true } } 
+        { meta: { skipAuthRedirect: true } }
       );
 
       if (!data?.token) throw new Error('Token not received from API');
@@ -90,14 +85,21 @@ export const Login = () => {
       localStorage.setItem('email', cred.user.email || '');
       localStorage.setItem('photoURL', cred.user.photoURL || cred.user.providerData?.[0]?.photoURL || '');
 
-      console.log('[Login] token saved?', !!localStorage.getItem('token'));
-      navigate('/');
+      // 👇 Refleja sesión en Redux para que SideBar muestre la foto y abra el menú
+      dispatch(login({
+        uid: cred.user.uid,
+        email: cred.user.email || '',
+        displayName: cred.user.displayName || '',
+        photoURL: localStorage.getItem('photoURL') || null,
+      }));
+
+      navigate(from, { replace: true });                     // ← CAMBIO
     } catch (error) {
       console.error('[Login] GoogleSignIn error status:', error?.response?.status);
       console.error('[Login] GoogleSignIn error data:', error?.response?.data);
       console.error('[Login] GoogleSignIn error msg:', error?.message);
-      setErrorMsg('Google sign-in failed'); 
-    }     
+      setErrorMsg('Google sign-in failed');
+    }
   };
 
   return (

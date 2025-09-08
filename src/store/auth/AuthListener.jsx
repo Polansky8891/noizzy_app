@@ -1,7 +1,7 @@
 // src/auth/AuthListener.jsx
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { FirebaseAuth } from '../../firebase/config';
 import { login, logout } from './authSlice';
 
@@ -9,34 +9,28 @@ export default function AuthListener() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    console.log('[AuthListener] mount'); // 👀 para verificar que se monta
+    // 1) Hidrata Redux una sola vez desde localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      dispatch(login({
+        uid: localStorage.getItem('uid') || '',
+        email: localStorage.getItem('email') || '',
+        displayName: localStorage.getItem('name') || '',
+        photoURL: localStorage.getItem('photoURL') || null,
+      }));
+    } else {
+      dispatch(logout());
+    }
 
-    // Persistencia local (sesión tras recargar)
-    setPersistence(FirebaseAuth, browserLocalPersistence).catch((e) => {
-      console.warn('[AuthListener] setPersistence error:', e);
+    // 2) Listener de Firebase: si no hay token, aseguramos logout
+    const unsub = onAuthStateChanged(FirebaseAuth, () => {
+      const hasToken = !!localStorage.getItem('token');
+      if (!hasToken) dispatch(logout());
+      // Si hay token, no tocamos Redux aquí (ya está hidratado)
     });
 
-    const unsub = onAuthStateChanged(FirebaseAuth, (user) => {
-      console.log('[AuthListener] onAuthStateChanged user:', user);
-      if (user) {
-        const { uid, email, displayName } = user;
-        const photoURL =
-          user.photoURL ||
-          user.providerData?.[0]?.photoURL ||
-          null;
-
-        console.log('[AuthListener] resolved photoURL:', photoURL);
-        dispatch(login({ uid, email, displayName, photoURL }));
-      } else {
-        dispatch(logout());
-      }
-    });
-
-    return () => {
-      console.log('[AuthListener] unmount');
-      unsub();
-    };
+    return unsub;
   }, [dispatch]);
 
-  return null; // no pinta nada, sólo escucha
+  return null;
 }

@@ -25,16 +25,23 @@ export const SideBar = () => {
   useEffect(() => {
     const handleClickOutside = (e) => {
       const wrap = avatarWrapRef.current;
-      const btn  = avatarBtnRef.current;
-      if (wrap && !wrap.contains(e.target) && btn && !btn.contains(e.target)) {
+      const btn = avatarBtnRef.current;
+      if (wrap && !wrap.containts(e.target) && btn && !btn.contains(e.target)) {
         setIsMenuOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleMenu = (e) => {
+  const handleAvatarMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleAvatarMouseUp = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen((v) => !v);
   };
@@ -64,8 +71,10 @@ export const SideBar = () => {
           status === "authenticated" ? (
             <div className="relative" ref={avatarWrapRef}>
               <button
+                type="button"
                 ref={avatarBtnRef}
-                onClick={toggleMenu}
+                onMouseDown={handleAvatarMouseDown}
+                onMouseUp={handleAvatarMouseUp}
                 className="text-lg px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1DF0D8]/50"
                 aria-haspopup="menu"
                 aria-expanded={isMenuOpen}
@@ -83,12 +92,16 @@ export const SideBar = () => {
                 )}
               </button>
               <PopoverPortal anchorRef={avatarBtnRef} open={isMenuOpen} onClose={closeMenu} align="bottom">
-                  <div className={`transition-all duration-200 ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
-                    <SettingsMenu closeMenu={closeMenu} />
+                  <div 
+                    className={`mt-2 transition-all duration-200 ${
+                    isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+                  }`}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  >
+                  <SettingsMenu closeMenu={closeMenu} />
                   </div>
               </PopoverPortal>
-
-              
             </div>
           ) : (
             <Link to="/profile" className="text-lg px-4 no-underline" aria-label="Iniciar sesión">

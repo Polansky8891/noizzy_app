@@ -1,16 +1,37 @@
 import { useNavigate } from "react-router-dom";
 import { logout } from "../store/auth/authSlice";
 import { useDispatch } from "react-redux";
+import { signOut } from "firebase/auth";
+import { FirebaseAuth } from "../firebase/config";
+import { axiosInstance } from "../api/axiosInstance";
 
 export const SettingsMenu = ({ closeMenu }) => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const handleClick = () => {
-    dispatch(logout());
-  }
+  const handleClick = async () => {
+     try {
+      await signOut(FirebaseAuth);
+     } catch (error) {
+      console.warn('Firebase signOut error:', error);
+     }
 
+     localStorage.removeItem('token');
+     localStorage.removeItem('uid');
+     localStorage.removeItem('name');
+     localStorage.removeItem('email');
+     localStorage.removeItem('photoURL');
+
+     if (axiosInstance?.defaults?.headers?.common) {
+        delete axiosInstance.defaults.headers.common.Authorization;
+     }
+
+     dispatch(logout());
+
+     closeMenu?.();
+     navigate('/profile', { replace: true });
+  }
 
   return (
 
@@ -22,7 +43,7 @@ export const SettingsMenu = ({ closeMenu }) => {
           <button
             onClick={() => {
               navigate('/account');
-              closeMenu();
+              closeMenu?.();
             }}
             className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
           >
