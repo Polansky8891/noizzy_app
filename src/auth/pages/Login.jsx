@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { axiosInstance } from '../../api/axiosInstance';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { FirebaseAuth, GoogleProvider } from '../../firebase/config'; 
 import { login } from '../../store/auth/authSlice';
 
@@ -66,18 +66,21 @@ export const Login = () => {
     setErrorMsg(null);
     try {
       const cred = await signInWithPopup(FirebaseAuth, GoogleProvider);
-      const idToken = await cred.user.getIdToken();
-      console.log('[Login] popup ok, user:', cred.user?.uid);
-      console.log('[Login] idToken len:', idToken?.length);
+      
+      const gCred = GoogleAuthProvider.credentialFromResult(cred);
+      if (!gCred?.idToken) throw new Error ('No Google ID token in credential');
+      const idToken = gCred.idToken;
+
+      const payload = JSON.parse(atob(idToken.split('.')[1]));
+      console.log('[Google ID token] aud:', payload.aud, 'azp:', payload.azp, 'iss:', payload.iss, 'email:', payload.email);
+
+
 
       const { data } = await axiosInstance.post(
         '/auth/google',
         { idToken },
         { meta: { skipAuthRedirect: true } } 
       );
-
-      console.log('[Login] /auth/google resp:', data);
-
 
       if (!data?.token) throw new Error('Token not received from API');
 
