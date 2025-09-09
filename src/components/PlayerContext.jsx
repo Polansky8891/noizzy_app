@@ -1,11 +1,11 @@
 import { createContext, useState, useContext, useRef, useEffect, useCallback } from "react";
 import { configureTickBuffer, startTicking, stopTicking } from "../utils/tickBuffer";
+import { API_BASE } from "../api/base";
 
 const PlayerContext = createContext();
 export const usePlayer = () => useContext(PlayerContext);
 
 const getAuthToken = () => localStorage.getItem("token");
-const API = import.meta.env.VITE_API_BASE_URL || '';
 
 export const PlayerProvider = ({ children }) => {
   const audioRef = useRef(new Audio());
@@ -43,9 +43,9 @@ export const PlayerProvider = ({ children }) => {
       const token = getAuthToken();
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = `Bearer ${token}`;
-      await fetch(`${API}/api/stats/play`, {
+      await fetch(`${API_BASE}/stats/play`, {
         method: "POST",
-        headers,
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'x-token': token } : {}) },
         body: JSON.stringify({ trackId: track._id, genre: track.genre }),
       });
     } catch (_) {}
@@ -55,7 +55,7 @@ export const PlayerProvider = ({ children }) => {
   useEffect(() => {
     const getStateFn = () => ({ isPlaying: isPlayingRef.current, currentTrack: currentTrackRef.current });
     const getTokenFn = () => getAuthToken();
-    configureTickBuffer({ getStateFn, getTokenFn, endpoint: `${API}/api/stats/tick` });
+    configureTickBuffer({ getStateFn, getTokenFn, endpoint: `${API_BASE}/stats/tick` });
     startTicking();
     return () => stopTicking();
   }, []);

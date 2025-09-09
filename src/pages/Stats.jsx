@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { API_BASE } from "../api/base";
 
 function getAuthToken() {
   return localStorage.getItem("token");
@@ -35,7 +36,7 @@ export const Stats = () => {
     }
 
     const API = import.meta.env.VITE_API_BASE_URL || "";
-    const res = await fetch(`${API}/api/stats/summary?days=7`, {
+    const res = await fetch(`${API_BASE}/stats/summary?days=7`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

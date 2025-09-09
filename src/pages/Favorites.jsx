@@ -5,10 +5,11 @@ import { fetchFavoriteTracks, removeFavorite, selectFavoriteTracks, selectFavori
 import { FavButton } from "../components/FavButton";
 import { usePlayer } from "../components/PlayerContext";
 import { FiTrash2 } from 'react-icons/fi';
+import { API_BASE } from "../api/base";
 
 
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:4000/api';
+const API_URL = API_BASE;
 const MEDIA_BASE = import.meta.env.VITE_MEDIA_BASE_URL || API_URL;
 
 const fmt = (sec) => {

@@ -7,14 +7,17 @@ let apiEndpoint = '/api/stats/tick';
 let getState = null;
 let getToken = null;
 
+let beforeUnloadHandler = null;
+let visibilityHandler = null;
+
 export function configureTickBuffer({ getStateFn, getTokenFn, endpoint } = {} ) {
     if (getStateFn) getState = getStateFn;
     if (getTokenFn) getToken = getTokenFn;
-    if (endpoint) apiEndpoint = endpoint;
+    if (endpoint) apiEndpoint = endpoint.replace(/\/$/, '');
 }
 
 export function startTicking() {
-    if (!intervalId) return;
+    if (intervalId) return;
     if (!getState) throw new Error('configureTickBuffer: falta getStateFn');
 
     intervalId = window.setInterval(() => {
@@ -31,33 +34,29 @@ export function startTicking() {
         if (queue.length >= 4) flushTicks();
     }, TICK_INTERVAL_MS);
 
-    const onBeforeUnload = () => {
-        if (!queue.length) return;
-        try {
-            const payload = JSON.stringify({ ticks: queue });
-            navigator.sendBeacon(apiEndpoint, new Blob([payload], { type: 'application/json'}));
-        } catch (_) {}
-        queue = [];
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) flushTicks();
-    });
+    beforeUnloadHandler = () => flushTicks({ keepalive: true });
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+
+    visibilityHandler = () => {
+        if (document.hidden) flushTicks({ keepalive: true});
+    }
+    document.addEventListener('visibilitychange', visibilityHandler);
 }
 
-export async function flushTicks() {
+export async function flushTicks({ keepalive = false }) {
     if (!queue.length) return;
     const batch = queue.slice();
     queue = [];
     try {
-        const token = getToken ? getToken() : null;
+        const token = (typeof getToken === 'function' && getToken()) || localStorage.getItem('token');
         const headers = { 'Content-Type' : 'application/json'};
-        if (token) headers.Authorization = `Bearer ${token}`;
+        if (token) headers['x-token'] = token;
 
         await fetch(apiEndpoint, {
             method: 'POST',
             headers,
             body: JSON.stringify({ ticks: batch }),
+            keepalive
         });
     } catch (error) {
         queue.unshift(...batch);
@@ -69,7 +68,15 @@ export function stopTicking() {
         clearInterval(intervalId);
         intervalId = null;
     }
-    flushTicks();
+    if (beforeUnloadHandler) {
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        beforeUnloadHandler = null;
+    }
+    if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+        visibilityHandler = null;
+    }
+    flushTicks({ keepalive: true});
 }
 
 

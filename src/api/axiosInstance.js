@@ -2,13 +2,12 @@ import axios from "axios";
 import { store } from "../store/store";
 import { logout } from "../store/auth/authSlice";
 import { createBrowserHistory } from "history";
+import { API_BASE } from "./base";
 
 const history = createBrowserHistory();
 
 
-export const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:4000/api'
-});
+export const axiosInstance = axios.create({ baseURL: API_BASE });
 
 axiosInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
