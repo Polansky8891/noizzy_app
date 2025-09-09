@@ -26,13 +26,48 @@ export const PlayerProvider = ({ children }) => {
   // Evitar duplicar PlayEvent si reanudan la misma pista
   const lastPlayedTrackIdRef = useRef(null);
 
+  const normalizeGenre = (g) => {
+    if (!g) return null;
+    const s = String(g).trim().toLowerCase();
+    const map = {
+      'hip hop': 'Hip-Hop',
+      'hip-hop': 'Hip-Hop',
+      'techno': 'Techno',
+      'rock': 'Rock',
+      'pop': 'Pop',
+      'electro': 'Electro',
+      'jazz': 'Jazz',
+      'blues': 'Blues',
+      'classical': 'Classical',
+      'dubstep': 'Dubstep',
+      'house': 'House',
+      'reggae': 'Reggae'
+    };
+    return map[s] ?? s.replace(/\b\w/g, m => m.toUpperCase());
+  };
+
+  const pickGenre = (t = {}) => {
+  const raw =
+    t.genre ??
+    t.genres?.[0] ??
+    t.metadata?.genre ??
+    t.tags?.genre ??
+    t.category ??
+    t.primaryGenreName ??
+    null;
+  return normalizeGenre(raw);
+};
+
+
+
+
   function normalizeTrack(t = {}) {
     return {
-      _id: t._id || t.id || "",     // mantenemos _id para el backend
+      _id: t._id || t.id || "",     
       id: String(t._id || t.id || ""),
       title: t.title || "",
       artist: t.artist || "",
-      genre: t.genre || null,
+      genre: pickGenre(t),
       audioPath: t.audioPath || t.audioUrl || "",
       cover: t.cover || t.coverUrl || t.image || null,
     };
