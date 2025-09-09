@@ -1,8 +1,6 @@
 import { SideBarButton } from "./SideBarButton";
 import { HiHome } from "react-icons/hi2";
 import { MdLibraryMusic, MdFavoriteBorder } from "react-icons/md";
-import { LuTrendingUp } from "react-icons/lu";
-import { FaUserFriends } from "react-icons/fa";
 import { BsGraphUp } from "react-icons/bs";
 import { SettingsMenu } from "./SettingsMenu";
 import { useRef, useState, useEffect } from "react";
@@ -125,13 +123,7 @@ export const SideBar = () => {
             <SideBarButton title={collapsed ? "" : "Favorites"} to="/favorites" icon={<MdFavoriteBorder />} iconClassName="text-[#1DF0D8]" />
           </li>
           <li>
-            <SideBarButton title={collapsed ? "" : "Trending"} to="/trending" icon={<LuTrendingUp />} iconClassName="text-[#1DF0D8]" />
-          </li>
-          <li>
             <SideBarButton title={collapsed ? "" : "Stats"} to="/stats" icon={<BsGraphUp />} iconClassName="text-[#1DF0D8]" />
-          </li>
-          <li>
-            <SideBarButton title={collapsed ? "" : "Friends"} to="/friends" icon={<FaUserFriends />} iconClassName="text-[#1DF0D8]" />
           </li>
         </ul>
       </div>

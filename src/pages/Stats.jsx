@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { API_BASE } from "../api/base";
+import Kpi from "../components/Kpi";
 
 function getAuthToken() {
   return localStorage.getItem("token");
@@ -137,19 +138,18 @@ export const Stats = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-semibold">Tus estadísticas (últimos 7 días)</h1>
+      <h1 className="text-xl font-semibold text-[#1DF0D8]">Your stats (last 7 days)</h1>
 
       {/* KPIs básicos */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Kpi title="Minutos" value={data.minutes} />
-        <Kpi title="Reproducciones" value={data.plays} />
-        <Kpi title="Pistas únicas" value={data.uniqueTracks} />
-        <Kpi title="Días con escucha" value={data.days} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[#1DF0D8]">
+        <Kpi title="Minutes" value={data.minutes} valueClassName="text-[#1DF0D8]" />
+        <Kpi title="Plays" value={data.plays} />
+        <Kpi title="Unique songs" value={data.uniqueTracks} />
       </div>
 
       {/* Gráfico diario */}
       <section className="bg-white/5 rounded-xl p-4">
-        <h2 className="mb-3 font-medium">Minutos por día</h2>
+        <h2 className="mb-3 font-medium text-[#1DF0D8]">Minutes per day</h2>
         <div style={{ width: "100%", height: 280 }}>
           <ResponsiveContainer>
             <BarChart data={dailyMinutes}>
@@ -164,7 +164,7 @@ export const Stats = () => {
 
       {/* Top géneros */}
       <section className="bg-white/5 rounded-xl p-4">
-        <h2 className="mb-3 font-medium">Top géneros por tiempo</h2>
+        <h2 className="mb-3 font-medium text-[#1DF0D8]">Top genre by time</h2>
         <ul className="space-y-2">
           {(data.topGenres ?? []).slice(0, 10).map((g) => {
             const minutes = Math.round((g?.ms ?? 0) / 60000);
@@ -176,7 +176,7 @@ export const Stats = () => {
             );
           })}
           {(!data.topGenres || data.topGenres.length === 0) && (
-            <li className="text-gray-400">Sin datos de géneros aún.</li>
+            <li className="text-[#1DF0D8]">No data genre yet</li>
           )}
         </ul>
       </section>
@@ -184,11 +184,4 @@ export const Stats = () => {
   );
 }
 
-function Kpi({ title, value }) {
-  return (
-    <div className="bg-white/5 rounded-xl p-4">
-      <div className="text-sm text-gray-300">{title}</div>
-      <div className="text-2xl font-bold tabular-nums">{value}</div>
-    </div>
-  );
-}
+
