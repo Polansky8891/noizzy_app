@@ -9,7 +9,6 @@ import reggaeImg from '../assets/images/reggae.png';
 import houseImg from '../assets/images/house.png';
 import jazzImg from '../assets/images/jazz.png';
 import { Link } from 'react-router-dom';
-import { GenreCard } from '../components/GenreCard';
 
 export const Home = () => {
 
@@ -38,8 +37,13 @@ export const Home = () => {
     <div className="w-full h-full bg-black rounded-3xl">
       
         
-          <h2 className="text-[#1DF0D8] font-orbitron text-3xl font-bold mb-5">
-            Top genres
+          <h2
+            className="
+              text-3xl font-exo font-light text-[#1DF0D8] mb-5
+              [filter:drop-shadow(0_0_2px_rgba(29,240,216,0.7))_drop-shadow(0_0_6px_rgba(29,240,216,0.4))]
+            "
+          >
+              Top genres
           </h2>
 
           <div className="grid grid-cols-[repeat(5,max-content)] gap-x-5 gap-y-3 justify-start ml-2">
@@ -48,7 +52,7 @@ export const Home = () => {
             
                 <div key={g.slug} className="flex flex-col items-center">
                   
-                    <span className="mt-2 font-semibold text-white">{g.name}</span>
+                    
                     <Link to={`/genre/${g.slug}`}>
                     <div className="w-[120px] h-[120px] rounded-2xl overflow-hidden border border-white/10 bg-gray-800">
                        <img src={g.img} alt={g.name} className="w-full h-full object-cover" />

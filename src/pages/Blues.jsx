@@ -1,4 +1,3 @@
-import bluesCover from "../assets/images/bluesCover.png"
 export const Blues = () => {
   return (
     <>
