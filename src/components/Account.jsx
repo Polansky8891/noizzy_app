@@ -4,7 +4,6 @@ import { RiFolderMusicLine } from "react-icons/ri";
 import { MdCancelPresentation } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
 import { FaRegBell } from "react-icons/fa6";
-import { MdOutlinePrivacyTip } from "react-icons/md";
 import { Link } from "react-router-dom";
 
 export const Account = () => {
