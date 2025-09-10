@@ -146,6 +146,22 @@ export const PlayerProvider = ({ children }) => {
 
   const pauseTrack = () => { audioRef.current.pause(); };
 
+  const resumeTrack = async () => {
+    const a = audioRef.current;
+    if (!a.src) return;
+    try { await a.play(); } catch (e) { console.warn('[Player] resume play blocked:', e); }
+  };
+
+  const togglePlay = async () => {
+    const a = audioRef.current;
+    if (!a.src) return;
+    if (a.paused) {
+      try { await a.play(); } catch (e) { console.warn('[Player] toggle to play blocked:', e); }
+    } else {
+      a.pause();
+    }
+  };
+
   const seek = (seconds) => {
     const a = audioRef.current;
     const target = Math.min(Math.max(0, seconds), duration || 0);
@@ -182,6 +198,8 @@ export const PlayerProvider = ({ children }) => {
         setVolume,
         muted,
         toggleMute,
+        resumeTrack,
+        togglePlay,
       }}
     >
       {children}

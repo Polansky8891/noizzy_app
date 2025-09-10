@@ -52,23 +52,88 @@ export const GenreCard = () => {
   const genre = SLUG_TO_GENRE[slug];
   if (!genre) return <Navigate to="/" replace />;
 
-  const { playTrack, currentTrack } = usePlayer();
+  const { playTrack, currentTrack, togglePlay, isPlaying, pauseTrack } = usePlayer();
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [firstLoad, setFirstLoad] = useState(true);
 
-  const columns = useMemo(() => ([
-    { name: "Title", selector: r => r.title, sortable: false },
-    { name: "Artist", selector: r => r.artist, sortable: false },
-    {
-      name: "Duration",
-      selector: r => r.duration,
-      cell: r => toMMSS(r.duration),
-      right: true,
-      maxWidth: "120px",
+const columns = useMemo(() => ([
+  {
+    name: "",
+    cell: (row) => {
+      const src = toAbsoluteUrl(row.coverUrl || row.cover || row.image);
+      const audioPath = toAbsoluteUrl(row.audioUrl);
+      const isActive = currentTrack && toAbsoluteUrl(row.audioUrl) === currentTrack.audioPath;
+
+      const onClick = (e) => {
+        e.stopPropagation();
+        if (isActive && typeof togglePlay === "function") {
+          togglePlay();               // pausa/reanuda si está disponible
+        } else {
+          handlePlayRow(row);         // reproduce la pista
+        }
+      };
+
+      const onKeyDown = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick(e);
+        }
+      };
+
+      return (
+        <div
+          className={`relative w-12 h-12 rounded-md overflow-hidden ${isActive ? "ring-2 ring-emerald-400" : ""}`}
+        >
+          <img
+            src={src}
+            alt={row.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => { e.currentTarget.src = "/placeholder-cover.png"; }}
+          />
+
+          {/* Overlay con botón */}
+          <button
+            aria-label={isActive ? (isPlaying ? "Pausar" : "Reanudar") : "Reproducir"}
+            onClick={onClick}
+            onKeyDown={onKeyDown}
+            className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity outline-none"
+          >
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/90 shadow">
+              {/* Icono Play/Pause en SVG */}
+              {isActive && isPlaying ? (
+                // pause
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <rect x="6" y="5" width="4" height="14"></rect>
+                  <rect x="14" y="5" width="4" height="14"></rect>
+                </svg>
+              ) : (
+                // play
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path d="M8 5v14l11-7z"></path>
+                </svg>
+              )}
+            </span>
+          </button>
+        </div>
+      );
     },
-  ]), []);
+    width: "64px",
+    allowOverflow: true,
+    button: true,
+  },
+  { name: "Title", selector: r => r.title },
+  { name: "Artist", selector: r => r.artist },
+  {
+    name: "Duration",
+    selector: r => r.duration,
+    cell: r => toMMSS(r.duration),
+    right: true,
+    maxWidth: "120px",
+  },
+]), [currentTrack, isPlaying]);
 
   const customStyles = { headCells: { style: { fontWeight: "bold", fontSize: "16px" } } };
 
