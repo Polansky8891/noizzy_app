@@ -4,6 +4,8 @@ import AuthListener from "./store/auth/AuthListener";
 import { SideBar } from "./components/SideBar";
 import { MusicPlayer } from "./components/MusicPlayer";
 import { useEffect, useRef, useState } from "react";
+import MobileNav from "./components/MobileNav";
+import { MobileHeader } from "./components/MobileHeader";
 
 import { Home } from "./pages/Home";
 import { Library } from "./pages/Library";
@@ -33,45 +35,19 @@ import { Jazz } from "./pages/Jazz";
 
 import { FaBars } from "react-icons/fa";
 
-function MobileHeader({ onOpen }) {
-  return (
-    <header className="lg:hidden sticky top-0 z-20 w-full border-b border-white/10
-                       bg-black/70 backdrop-blur supports-[backdrop-filter]:bg-black/50 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={onOpen}
-            aria-label='Abrir menú'
-            className="inline-flex items justify-center w-9 h-9 rounded-md
-                       border border-white/15 text-emerald-300 hover:bg-white/5"
-          >
-            <FaBars className="w-5 h-5" />
-          </button>
-          <span className="text-lg font-medium text-emerald-300">Menu</span>
-        </div>
-    </header>
-  );
-}
 
 export default function App() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const playerRef = useRef(null);
   const [playerH, setPlayerH] = useState(0);
-
   useEffect(() => {
-    const update = () => {
-      const h = playerRef.current?.offsetHeight || 0;
-      setPlayerH;
-    };
+    const update = () => setPlayerH(playerRef.current?.offsetHeight || 0);
     update();
-
-    window.addEventListener('resize', update);
     const ro = new ResizeObserver(update);
     if (playerRef.current) ro.observe(playerRef.current);
-    return () => {
-      window.removeEventListener('resize', update);
-      ro.disconnect();
-    };
+    window.addEventListener("resize", update);
+    return () => { window.removeEventListener("resize", update); ro.disconnect(); };
   }, []);
 
   return (
@@ -79,18 +55,22 @@ export default function App() {
       <AuthListener />
 
       <div className="min-h-dvh bg-black text-white overflow-x-hidden">
-        
-        <MobileHeader onOpen={() => setDrawerOpen(true)} />
+        {/* Header con hamburger (móvil) */}
+        <MobileHeader onToggle={() => setMobileNavOpen(v => !v)} />
+        {/* Barra horizontal oculta/visible según el hamburger */}
+        <MobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+
         <div className="flex">
+          {/* Sidebar fija en desktop */}
           <aside className="hidden lg:block w-60 shrink-0 h-dvh sticky top-0">
             <SideBar />
           </aside>
 
-          {/* Contenido principal */}
+          {/* Contenido principal (reserva altura del player) */}
           <main
             className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-4"
-            // deja hueco para que el player fijo no tape nada
             style={{ paddingBottom: `calc(${playerH}px + env(safe-area-inset-bottom))` }}
+            onClick={() => setMobileNavOpen(false)} // cerrar si tocas el contenido
           >
             <Routes>
               <Route path="/" element={<Home />} />
@@ -128,26 +108,9 @@ export default function App() {
           </main>
         </div>
 
-        {drawerOpen && (
-          <div className="lg:hidden fixed inset-0 z-40">
-            <div
-              className="absolute inset-0 bg-black/50"
-              onClick={() => setDrawerOpen(false)}
-            />
-            <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-[#111] shadow-xl p-4">
-              <button
-                className="mb-3 inline-flex items-center gap-2 text-sm text-gray-300"
-                onClick={() => setDrawerOpen(false)}
-              >
-                <span>x</span> Close
-              </button>
-
-              <SideBar onNavigate={() => setDrawerOpen(false)} />
-            </div>
-          </div>
-        )}
+        {/* Player fijo abajo (sin altura forzada, ya lo medimos) */}
         <div ref={playerRef} className="fixed bottom-0 inset-x-0 z-30">
-            <MusicPlayer />
+          <MusicPlayer />
         </div>
       </div>
     </BrowserRouter>
