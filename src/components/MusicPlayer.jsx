@@ -63,8 +63,8 @@ export const MusicPlayer = () => {
       <div className="mx-auto w-full max-w-screen-2xl px-3 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center gap-4 lg:gap-6">
           {/* Cover SOLO escritorio */}
-          <div className="hidden lg:block w-24 h-24 xl:w-28 xl:h-28 rounded-xl overflow-hidden bg-neutral-800 flex-shrink-0">
-            {currentTrack ? (
+          {currentTrack && (
+            <div className="hidden lg:block w-24 h-24 xl:w-28 xl:h-28 rounded-xl overflow-hidden flex-shrink-0">
               <img
                 src={currentTrack.cover || "/placeholder-cover.png"}
                 alt={currentTrack.title || "Cover"}
@@ -72,10 +72,8 @@ export const MusicPlayer = () => {
                 loading="lazy"
                 onError={(e) => { e.currentTarget.src = "/placeholder-cover.png"; }}
               />
-            ) : (
-              <div className="w-full h-full" />
-            )}
-          </div>
+            </div>
+)}
 
           {/* Columna derecha */}
           <div className="flex-1 min-w-0">
