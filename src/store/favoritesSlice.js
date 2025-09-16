@@ -8,20 +8,59 @@ const initialState = {
     error: null
 };
 
-export const fetchFavoriteTracks = createAsyncThunk('favorites/fetchTracks', async () => {
-    const { data } = await axiosInstance.get('/me/favorites', { meta: { skipAuthRedirect: true }});
-    return Array.isArray(data) ? data : [];
-});
+export const fetchFavoriteTracks = createAsyncThunk(
+    'favorites/fetchTracks',
+     async (__dirname, { rejectWithValue, signal }) => {
+        try {
+            const res = await axiosInstance.get('/me/favorites', {
+                signal,
+                meta: { skipAuthRedirect: true },
+                validateStatus: (s) => (s >= 200 && s < 300) || s === 204,
+            });
+            if (res.status === 204) return [];
+            return Array.isArray(res.data) ? res.data : [];
+        } catch (err) {
+            if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
+                return rejectWithValue('canceled');
+            }
+            const msg = err?.response?.data?.message || err.message || 'Error';
+            return rejectWithValue(msg);
+        }
+     } 
+    );
 
-export const addFavorite = createAsyncThunk('favorites/add', async (trackId) => {
-    await axiosInstance.post('/me/favorites', { trackId }, { meta: { skipAuthRedirect: true }});
-    return String(trackId);
-});
+export const addFavorite = createAsyncThunk(
+  "favorites/add",
+  async (trackId, { rejectWithValue }) => {
+    try {
+      await axiosInstance.post(
+        "/me/favorites",
+        { trackId },
+        { meta: { skipAuthRedirect: true } }
+      );
+      return String(trackId);
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message || "Error";
+      return rejectWithValue(msg);
+    }
+  }
+);
 
-export const removeFavorite = createAsyncThunk('favorites/remove', async (trackId) => {
-    await axiosInstance.delete(`/me/favorites/${trackId}`, { meta: { skipAuthRedirect: true }});
-    return String(trackId);
-});
+export const removeFavorite = createAsyncThunk(
+  "favorites/remove",
+  async (trackId, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/me/favorites/${trackId}`, {
+        meta: { skipAuthRedirect: true },
+      });
+      return String(trackId);
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message || "Error";
+      return rejectWithValue(msg);
+    }
+  }
+);
+
 
 const favoritesSlice = createSlice({
     name: 'favorites',
@@ -58,7 +97,7 @@ const favoritesSlice = createSlice({
             })
             .addCase(fetchFavoriteTracks.rejected, (s, a) => {
                 s.loading = false;
-                s.error = a.error.message || 'Error';
+                s.error = a.payload === 'canceled' ? null : a.payload || 'Error';
             })
             .addCase(addFavorite.fulfilled, (s, a) => {
                 const id = String(a.payload);

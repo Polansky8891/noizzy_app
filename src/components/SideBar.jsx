@@ -8,9 +8,10 @@ import { CgProfile } from "react-icons/cg";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PopoverPortal from "./PopoverPortal";
+import { FirebaseAuth } from "../firebase/config";
 
 export const SideBar = ({ compact = false, onNavigate }) => {
-  const [collapsed, setCollapsed] = useState(false); // sólo aplica en desktop (no compacto)
+  const [collapsed, setCollapsed] = useState(false); 
 
   const avatarWrapRef = useRef(null);
   const avatarBtnRef  = useRef(null);
@@ -18,13 +19,13 @@ export const SideBar = ({ compact = false, onNavigate }) => {
   const [animateClose, setAnimateClose] = useState(false);
 
   const { status, photoURL: photoURLFromRedux, displayName } = useSelector((s) => s.auth);
-  const photoURL = photoURLFromRedux || localStorage.getItem("photoURL") || "";
+  const photoURL = photoURLFromRedux || FirebaseAuth.currentUser?.photoURL || "";
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       const wrap = avatarWrapRef.current;
       const btn = avatarBtnRef.current;
-      // 🔧 FIX: 'contains', no 'containts'
+     
       if (wrap && !wrap.contains(e.target) && btn && !btn.contains(e.target)) {
         setIsMenuOpen(false);
       }
@@ -32,6 +33,10 @@ export const SideBar = ({ compact = false, onNavigate }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (status !== 'authenticated') setIsMenuOpen(false);
+  }, [status]);
 
   const handleAvatarMouseDown = (e) => {
     e.preventDefault();
@@ -54,30 +59,22 @@ export const SideBar = ({ compact = false, onNavigate }) => {
 
   const handleDoubleClick = (e) => {
     if (e.target.closest("a")) return;
-    if (!compact) setCollapsed((v) => !v); // en modo compacto no colapsamos
+    if (!compact) setCollapsed((v) => !v); 
   };
 
-  // Helpers para clases según modo
   const padClass   = compact ? "p-3" : "p-4";
   const roundClass = compact ? "rounded-xl" : "rounded-3xl";
   const gapClass   = compact ? "gap-2" : "gap-4";
   const itemPad    = compact ? "px-3 py-2 text-sm" : "px-4 py-3 text-base";
 
-  // ⚠️ MUY IMPORTANTE:
-  // Ahora la anchura la decide el contenedor padre (w-60 en desktop, w-[68vw] en drawer),
-  // por eso aquí usamos siempre `w-full` y no forzamos w-64/w-20,
-  // así evitamos peleas de layout. Cuando 'collapsed', sólo ocultamos los títulos.
   return (
     <aside
       onDoubleClick={handleDoubleClick}
       className={`w-full h-full bg-[#1C1C1C] text-white ${padClass} ${roundClass} flex flex-col transition-all duration-300 ease-in-out`}
     >
-      {/* Cabecera/espaciador */}
       <div className="text-lg font-semibold mb-2" />
 
-      {/* Bloque de perfil */}
       <div className="flex flex-col items-center">
-        {/* En compacto: ocultamos el bloque grande para no ocupar pantalla */}
         {!compact && (
           !collapsed && (
             status === "authenticated" ? (
@@ -123,13 +120,11 @@ export const SideBar = ({ compact = false, onNavigate }) => {
           )
         )}
 
-        {/* Mini encabezado en compacto (opcional) */}
         {compact && (
           <div className="mb-1 text-gray-300 text-sm self-start">Menu</div>
         )}
       </div>
 
-      {/* Menú */}
       <div className="flex-1 flex items-center justify-center">
         <ul className={`flex flex-col items-center ${gapClass}`}>
           <li>

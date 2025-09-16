@@ -1,14 +1,14 @@
 import { logout } from "./authSlice";
 import { resetFavorites } from "../favoritesSlice";
+import { signOut } from "firebase/auth";
+import { FirebaseAuth } from "../../firebase/config";
 
 
-export const doLogout = () => (dispatch) => {
+export const doLogout = () => async (dispatch) => {
   try {
-    localStorage.removeItem('token');
-    localStorage.removeItem('uid');
-    localStorage.removeItem('name');
-    localStorage.removeItem('email');
-    localStorage.removeItem('photoURL');
+    await signOut(FirebaseAuth); 
+  } catch (e) {
+    console.warn("Firebase signOut error:", e);
   } finally {
     dispatch(resetFavorites());
     dispatch(logout());

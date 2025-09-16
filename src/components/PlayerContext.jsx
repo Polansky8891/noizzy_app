@@ -1,11 +1,13 @@
 import { createContext, useState, useContext, useRef, useEffect, useCallback } from "react";
 import { configureTickBuffer, startTicking, stopTicking } from "../utils/tickBuffer";
-import { API_BASE } from "../api/base";
+import { axiosInstance } from "../api/axiosInstance";
+import { store } from "../store/store";
+import { selectToken } from "../store/auth/authSlice";
 
 const PlayerContext = createContext();
 export const usePlayer = () => useContext(PlayerContext);
 
-const getAuthToken = () => localStorage.getItem("token");
+const getReduxToken = () => selectToken(store.getState());
 
 export const PlayerProvider = ({ children }) => {
   const audioRef = useRef(new Audio());
@@ -17,13 +19,11 @@ export const PlayerProvider = ({ children }) => {
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
 
-  // Refs para evitar estado obsoleto en tickBuffer
   const isPlayingRef = useRef(isPlaying);
   const currentTrackRef = useRef(currentTrack);
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
   useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
 
-  // Evitar duplicar PlayEvent si reanudan la misma pista
   const lastPlayedTrackIdRef = useRef(null);
 
   const normalizeGenre = (g) => {
@@ -58,9 +58,6 @@ export const PlayerProvider = ({ children }) => {
   return normalizeGenre(raw);
 };
 
-
-
-
   function normalizeTrack(t = {}) {
     return {
       _id: t._id || t.id || "",     
@@ -75,27 +72,23 @@ export const PlayerProvider = ({ children }) => {
 
   async function logPlay(track) {
     try {
-      const token = getAuthToken();
-      const headers = { "Content-Type": "application/json" };
-      if (token) headers.Authorization = `Bearer ${token}`;
-      await fetch(`${API_BASE}/stats/play`, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'x-token': token } : {}) },
-        body: JSON.stringify({ trackId: track._id, genre: track.genre }),
-      });
-    } catch (_) {}
+      await axiosInstance.post(
+        '(stats/play',
+        { trackId: track._id, genre: track.genre },
+        { meta: { skipAuthRedirect: true }}
+      );
+    } catch (_) {
+    }
   }
 
-  // Configurar tick buffer (lee estado desde refs para no quedarse viejo)
   useEffect(() => {
     const getStateFn = () => ({ isPlaying: isPlayingRef.current, currentTrack: currentTrackRef.current });
-    const getTokenFn = () => getAuthToken();
-    configureTickBuffer({ getStateFn, getTokenFn, endpoint: `${API_BASE}/stats/tick` });
+    const getTokenFn = () => getReduxToken();
+    configureTickBuffer({ getStateFn, getTokenFn, endpoint: '/stats/tick' });
     startTicking();
     return () => stopTicking();
   }, []);
 
-  // Eventos del <audio>
   useEffect(() => {
     const a = audioRef.current;
 
@@ -127,17 +120,15 @@ export const PlayerProvider = ({ children }) => {
     const a = audioRef.current;
     const t = normalizeTrack(rawTrack);
 
-    // Si cambia de pista, actualiza src y estados
     const isNewTrack = !currentTrack || currentTrack.audioPath !== t.audioPath;
     if (isNewTrack) {
       a.src = t.audioPath;
       setCurrentTrack(t);
       setProgress(0);
 
-      // Registra PlayEvent solo la primera vez que empieza esta pista
       if (t._id && t._id !== lastPlayedTrackIdRef.current) {
         lastPlayedTrackIdRef.current = t._id;
-        logPlay(t); // <— AHORA sí se usa logPlay
+        logPlay(t); 
       }
     }
 

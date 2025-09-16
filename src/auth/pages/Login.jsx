@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { axiosInstance } from '../../api/axiosInstance';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseAuth, GoogleProvider } from '../../firebase/config'; 
-import { login } from '../../store/auth/authSlice';
-import { useLocation } from 'react-router-dom';
+import { login, setToken, checkingCredentials } from '../../store/auth/authSlice';
+
+const mapAuthError = (e) => {
+  const code = e?.code || '';
+  if (code.includes('invalid-credential') || code.includes('wrong-password')) return 'Email o contraseña incorrectos.';
+  if (code.includes('user-not-found')) return 'No existe una cuenta con ese email.';
+  if (code.includes('too-many-requests')) return 'Demasiados intentos. Prueba más tarde.';
+  if (code.includes('popup-closed-by-user')) return 'Se cerró la ventana de Google.';
+  return e?.message || 'Error de autenticación.';
+};
 
 export const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -14,12 +21,13 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const location = useLocation();                            // ← NUEVO
-  const from = location.state?.from?.pathname || '/';        // ← NUEVO
+  const location = useLocation();                            
+  const from = location.state?.from?.pathname || '/';        
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { status, errorMessage } = useSelector((s) => s.auth);
+  const disabled = status === 'checking' || submitting;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,32 +39,23 @@ export const Login = () => {
     setSubmitting(true);
 
     try {
-      const { data } = await axiosInstance.post('/auth', formData, {
-        meta: { skipAuthRedirect: true }
-      });
+      dispatch(checkingCredentials());
+      const cred = await signInWithEmailAndPassword(FirebaseAuth, formData.email, formData.password);
+      const user = cred.user;
+      const token = await user.getIdToken(false);
 
-      const { token, uid, name, email, photoURL } = data || {};
-      if (!token) throw new Error('Token not received');
+      dispatch(login({
+        uid: user.uid,
+        email: user.email || formData.email,
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || null,
+        token,
+      }));
+      dispatch(setToken(token));
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('uid', uid);
-      localStorage.setItem('name', name || '');
-      if (email) localStorage.setItem('email', email);
-      if (photoURL) localStorage.setItem('photoURL', photoURL);
-
-      dispatch(
-        login({
-          uid,
-          email: email || formData.email,
-          displayName: name || '',
-          photoURL: photoURL || null
-        })
-      );
-
-      navigate(from, { replace: true });                     // ← CAMBIO
-    } catch (error) {
-      const message = error.response?.data?.msg || 'Login failed';
-      setErrorMsg(message);
+      navigate(from, { replace: true});
+    } catch (err) {
+      setErrorMsg(mapAuthError(err));
     } finally {
       setSubmitting(false);
     }
@@ -64,41 +63,27 @@ export const Login = () => {
 
   const onGoogleSignIn = async () => {
     setErrorMsg(null);
+    setSubmitting(true);
     try {
-      const cred = await signInWithPopup(FirebaseAuth, GoogleProvider);
+      dispatch(checkingCredentials());
+      const res = await signInWithPopup(FirebaseAuth, GoogleProvider);
+      const user = res.user;
+      const token = await user.getIdToken(false);
 
-      const gCred = GoogleAuthProvider.credentialFromResult(cred);
-      if (!gCred?.idToken) throw new Error('No Google ID token in credential');
-      const idToken = gCred.idToken;
-
-      const { data } = await axiosInstance.post(
-        '/auth/google',
-        { idToken },
-        { meta: { skipAuthRedirect: true } }
-      );
-
-      if (!data?.token) throw new Error('Token not received from API');
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('uid', cred.user.uid);
-      localStorage.setItem('name', cred.user.displayName || '');
-      localStorage.setItem('email', cred.user.email || '');
-      localStorage.setItem('photoURL', cred.user.photoURL || cred.user.providerData?.[0]?.photoURL || '');
-
-      // 👇 Refleja sesión en Redux para que SideBar muestre la foto y abra el menú
       dispatch(login({
-        uid: cred.user.uid,
-        email: cred.user.email || '',
-        displayName: cred.user.displayName || '',
-        photoURL: localStorage.getItem('photoURL') || null,
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || user.providerData?.[0]?.photoURL || null,
+        token,
       }));
+      dispatch(setToken(token));
 
-      navigate(from, { replace: true });                     // ← CAMBIO
-    } catch (error) {
-      console.error('[Login] GoogleSignIn error status:', error?.response?.status);
-      console.error('[Login] GoogleSignIn error data:', error?.response?.data);
-      console.error('[Login] GoogleSignIn error msg:', error?.message);
-      setErrorMsg('Google sign-in failed');
+      navigate(from, { replace: true });
+    } catch (err) {
+      setErrorMsg(mapAuthError(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -113,8 +98,11 @@ export const Login = () => {
               className="bg-gray-200 text-black border-0 rounded-md p-2 w-full mb-4 md:mb-0"
               placeholder="Email"
               name="email"
+              type="email"
               value={formData.email}
               onChange={handleChange}
+              autoComplete='email'
+              required
             />
             <div className="relative w-full">
               <input
@@ -124,6 +112,8 @@ export const Login = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
+                autoComplete='current-password'
+                required
               />
               <button
                 type="button"
@@ -149,6 +139,7 @@ export const Login = () => {
             <button
               type="button"
               onClick={onGoogleSignIn}
+              disabled={disabled}
               className="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white py-2 rounded-md hover:from-indigo-600 hover:to-blue-600 transition w-full"
             >
               <svg className="w-5 h-5" viewBox="0 0 533.5 544.3">...</svg>

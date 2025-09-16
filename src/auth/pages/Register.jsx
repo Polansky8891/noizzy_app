@@ -1,10 +1,19 @@
 import { useState } from 'react';
-import { axiosInstance } from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
-import { login } from '../../store/auth/authSlice';
+import { login, setToken } from '../../store/auth/authSlice';
 import { fetchFavoriteTracks } from '../../store/favoritesSlice';
+import { FirebaseAuth } from '../../firebase/config';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+
+const mapAuthError = (e) => {
+  const code = e?.code || '';
+  if (code.includes('email-already-in-use')) return 'Ese email ya está registrado.';
+  if (code.includes('weak-password')) return 'La contraseña es demasiado débil (mín. 6).';
+  return e?.message || 'Error de registro.';
+};
+
 
 export const Register = () => {
   const [form, setForm] = useState({
@@ -18,6 +27,7 @@ export const Register = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -77,39 +87,34 @@ export const Register = () => {
     e.preventDefault();
     setErrorMsg(null);
 
-    const isValid = validate();
-    if (!isValid) return;
+    if (!validate()) return;
 
-    const { name, email, password } = form;
+    const { name, lastName, email, password } = form;
+    const displayName = `${name} ${lastName}`.trim();
 
     try {
-      const { data } = await axiosInstance.post('/auth/new', { name, email, password });
+      setSubmitting(true);
 
-      if (!data?.token) throw new Error('Token not received');
+      const cred = await createUserWithEmailAndPassword(FirebaseAuth, email, password);
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('uid', data.uid);
-      localStorage.setItem('name', data.name);
-      localStorage.setItem('email', email);
+      await updateProfile(cred.user, { displayName });
 
-      dispatch(
-        login({
-          uid: data.uid,
-          email,
-          displayName: data.name,
-          photoURL: null
-        })
-      );
+      dispatch(login({
+        uid: cred.user.uid,
+        email: cred.user.email || email,
+        displayName: cred.user.displayName || displayName,
+        photoURL: cred.user.photoURL || null,
+        token,
+      }));
+      dispatch(setToken(token));
 
       dispatch(fetchFavoriteTracks());
 
       navigate('/');
-      
     } catch (error) {
-      const message = error.response?.data?.msg || 'Register failed';
-      setErrorMsg(message);
-
-      
+      setErrorMsg(mapAuthError(error));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -195,19 +200,19 @@ export const Register = () => {
           >
             {showPassword ? <FaEyeSlash /> : <FaEye />}
           </button>
-          {errors.password && (
-            <span className="text-red-600 text-sm block mt-1 text-left">
-              {errors.password}
-            </span>
-          )}
+          {errors.confirmPassword && <span className="text-red-600 text-sm block mt-1 text-left">{errors.confirmPassword}</span>}
           </div>
-
           <button 
             className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white py-2 rounded-md hover:bg-indigo-600 hover:to-blue-600 transition ease-in duration-200 mt-2" 
             type="submit"
+            disabled={submitting}
           >
-            Submit
+            {submitting ? 'Creating account...' : 'Submit'}
+            
           </button>
+
+          {errorMsg && <p className="text-red-600 text-sm mt-3 text-center">{errorMsg}</p>}
+
           <div className="flex justify-center items-center mt-2">
           <h3 className="text-black text-sm">Already have an account?</h3>
           <a href="/login" className="text-sm px-4 no-underline text-blue-700">Sign In</a>

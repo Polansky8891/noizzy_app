@@ -4,11 +4,12 @@ import { useSelector } from "react-redux";
 import { useRef, useState, useEffect } from "react";
 import { SettingsMenu } from "./SettingsMenu";
 import { Link } from "react-router-dom";
+import { FirebaseAuth } from "../firebase/config";
 
 export function MobileHeader({ onToggle }) {
 
   const { status, photoURL: photoURLFromRedux, displayName } = useSelector((s) =>s.auth);
-  const photoURL = photoURLFromRedux || localStorage.getItem('photoURL') || '';
+  const photoURL = photoURLFromRedux || FirebaseAuth.currentUser?.photoURL || '';
 
   const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef(null);

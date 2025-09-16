@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { FirebaseAuth } from "./config";
 
 
@@ -9,19 +9,30 @@ googleProvider.setCustomParameters({
     prompt: 'select_account'
 });
 
-export const signInWithGoogle = async () => {
+function mapAuthError(e) {
+  const code = e?.code || '';
+  if (code.includes('popup-closed-by-user')) return 'Se cerró la ventana de Google';
+  return e?.message || 'Error de autenticación';
+}
+
+export async function signInWithGoogle() {
   try {
-    
     const result = await signInWithPopup(FirebaseAuth, googleProvider);
-    const { displayName, email, photoURL, uid } = result.user;
-
-    return { ok: true, displayName, email, photoURL, uid };
-
+    const user = result.user;
+    const token = await user.getIdToken(false);
+    return {
+      ok: true,
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || '',
+      photoURL: user.photoURL || null,
+      token,
+    }
   } catch (error) {
-
-    const errorCode = error.code;
-    const errorMessage = error.message;
-
-    return { ok: false, errorMessage: error.message };
+    return { ok: false, errorMessage: mapAuthError(error)};
   }
-};
+}
+
+export async function logoutFirebase() {
+  await signOut(FirebaseAuth);
+}

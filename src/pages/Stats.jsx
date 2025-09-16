@@ -1,11 +1,9 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { API_BASE } from "../api/base";
 import Kpi from "../components/Kpi";
-
-function getAuthToken() {
-  return localStorage.getItem("token");
-}
+import { axiosInstance } from "../api/axiosInstance";
+import { useSelector } from "react-redux";
+import { selectIsAuthenticated, selectToken } from "../store/auth/authSlice";
 
 const emptySummary = {
   days: 0,
@@ -15,82 +13,66 @@ const emptySummary = {
   topGenres: [],
   daily: [],
 };
-export const Stats = () => {
-    
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0); // para reintentos
 
-  const token = getAuthToken();
+export const Stats = () => {
+  const isAuth = useSelector(selectIsAuthenticated);
+  const token  = useSelector(selectToken);
+
+  const [data, setData]       = useState(null);
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const fetchStats = useCallback(async (signal) => {
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  try {
-    const token = getAuthToken(); // lee fresco en cada intento
-    if (!token) {
-      // No dispares fetch si aún no hay token
-      setLoading(false);
-      return;
-    }
+    try {
+      // si no hay sesión/token aún, no dispares la petición
+      if (!isAuth || !token) {
+        setData(null);
+        return;
+      }
 
-    const API = import.meta.env.VITE_API_BASE_URL || "";
-    const res = await fetch(`${API_BASE}/stats/summary?days=7`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-      signal,
-    });
-
-    if (res.status === 204) {
-      setData({
-        days: 7,
-        minutes: 0,
-        plays: 0,
-        uniqueTracks: 0,
-        topGenres: [],
-        daily: [],
+      const res = await axiosInstance.get("/stats/summary", {
+        params: { days: 7 },
+        signal,
+        // aceptamos 204 como éxito sin contenido
+        validateStatus: (s) => (s >= 200 && s < 300) || s === 204,
+        meta: { skipAuthRedirect: true },
       });
-      return;
+
+      if (res.status === 204) {
+        setData({ ...emptySummary, days: 7 });
+        return;
+      }
+
+      const json = res.data || {};
+      setData({
+        days: json?.days ?? 0,
+        minutes: Math.round(json?.minutes ?? 0),
+        plays: json?.plays ?? 0,
+        uniqueTracks: json?.uniqueTracks ?? 0,
+        topGenres: Array.isArray(json?.topGenres) ? json.topGenres : [],
+        daily: Array.isArray(json?.daily) ? json.daily : [],
+      });
+    } catch (err) {
+      // cancelación de axios
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
+        console.debug("[Stats] request canceled");
+        return;
+      }
+      console.error("[Stats] fetch error:", err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Error desconocido obteniendo estadísticas.";
+      setError(msg);
+      setData(null);
+    } finally {
+      if (!signal?.aborted) setLoading(false);
     }
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(
-        `Error API ${res.status} ${res.statusText}` +
-        (text ? ` – Detalle: ${text}` : "")
-      );
-    }
-
-    const json = await res.json();
-    setData({
-      days: json?.days ?? 0,
-      minutes: Math.round(json?.minutes ?? 0),
-      plays: json?.plays ?? 0,
-      uniqueTracks: json?.uniqueTracks ?? 0,
-      topGenres: Array.isArray(json?.topGenres) ? json.topGenres : [],
-      daily: Array.isArray(json?.daily) ? json.daily : [],
-    });
-
-  } catch (err) {
-    // ⬇️ Abort no es un “error”; lo ignoramos silenciosamente
-    if (err && err.name === "AbortError") {
-      console.debug("[Stats] fetch aborted");
-      return;
-    }
-    console.error("[Stats] fetch error:", err);
-    setError(err.message || "Error desconocido obteniendo estadísticas.");
-    setData(null);
-  } finally {
-    // ⬇️ No toques estado si ya está abortado (evita warnings/flip-flops)
-    if (!signal?.aborted) setLoading(false);
-  }
-}, []);
-
+  }, [isAuth, token]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -106,6 +88,10 @@ export const Stats = () => {
     }));
   }, [data]);
 
+  if (!isAuth || !token) {
+    return <div className="p-6 text-gray-300">You must login to see stats.</div>;
+  }
+
   if (loading) {
     return <div className="p-6 text-gray-300">Cargando stats…</div>;
   }
@@ -113,9 +99,7 @@ export const Stats = () => {
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-red-400 mb-3">
-          {error}
-        </p>
+        <p className="text-red-400 mb-3">{error}</p>
         <button
           onClick={() => setReloadKey((k) => k + 1)}
           className="px-3 py-2 rounded bg-white/10 hover:bg-white/20"
@@ -129,9 +113,7 @@ export const Stats = () => {
   if (!data) {
     return (
       <div className="p-6">
-        <p className="text-gray-300">
-          No hay datos de estadísticas por ahora.
-        </p>
+        <p className="text-gray-300">No hay datos de estadísticas por ahora.</p>
       </div>
     );
   }
@@ -140,7 +122,7 @@ export const Stats = () => {
     <div className="p-6 space-y-6">
       <h1 className="text-xl font-semibold text-[#1DF0D8]">Your stats (last 7 days)</h1>
 
-      {/* KPIs básicos */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[#1DF0D8]">
         <Kpi title="Minutes" value={data.minutes} valueClassName="text-[#1DF0D8]" />
         <Kpi title="Plays" value={data.plays} />
@@ -182,6 +164,4 @@ export const Stats = () => {
       </section>
     </div>
   );
-}
-
-
+};

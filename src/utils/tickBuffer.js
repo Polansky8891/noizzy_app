@@ -1,14 +1,31 @@
+import { axiosInstance } from "../api/axiosInstance";
+
 const TICK_INTERVAL_MS = 15000;
 
 let intervalId = null;
 let queue = [];
-let apiEndpoint = '/api/stats/tick';
+
+let apiEndpoint = '/stats/tick';
 
 let getState = null;
 let getToken = null;
 
 let beforeUnloadHandler = null;
 let visibilityHandler = null;
+
+// helpers
+const stripDoubleSlash = (a, b) => (a.endsWith('/') ? a.slice(0, -1) : a) + (b.startsWith('/') ? b : `/${b}`);
+const isAbsoluteUrl = (u = '') => /^https?:\/\//i.test(u);
+const normalizeForAxios = (endpoint = '/stats/tick') => {
+    if (endpoint.startsWith('/api/')) return endpoint.slice(4) || '/';
+    return endpoint;
+};
+
+const makeAbsoluteForFetch = (endpoint = '/stats/tick') => {
+    if (isAbsoluteUrl(endpoint)) return endpoint;
+    const base = axiosInstance.defaults?.baseURL || '';
+    return stripDoubleSlash(base, normalizeForAxios(endpoint));
+};
 
 export function configureTickBuffer({ getStateFn, getTokenFn, endpoint } = {} ) {
     if (getStateFn) getState = getStateFn;
@@ -25,13 +42,15 @@ export function startTicking() {
         if (!isPlaying || !currentTrack) return;
 
         queue.push({
-            trackId: currentTrack._id,
-            genre: currentTrack.genre,
+            trackId: String(currentTrack._id || currentTrack.id || ''),
+            genre: currentTrack.genre || null,
             ms: TICK_INTERVAL_MS,
             at: new Date().toISOString(),
         });
 
-        if (queue.length >= 4) flushTicks();
+        if (queue.length >= 4) {
+            void flushTicks().catch(() => {});
+        }
     }, TICK_INTERVAL_MS);
 
     beforeUnloadHandler = () => flushTicks({ keepalive: true });
@@ -47,17 +66,31 @@ export async function flushTicks({ keepalive = false }) {
     if (!queue.length) return;
     const batch = queue.slice();
     queue = [];
+   
     try {
-        const token = (typeof getToken === 'function' && getToken()) || localStorage.getItem('token');
-        const headers = { 'Content-Type' : 'application/json'};
-        if (token) headers['x-token'] = token;
+        const endpointRel = normalizeForAxios(apiEndpoint);
 
-        await fetch(apiEndpoint, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ ticks: batch }),
-            keepalive
-        });
+        if (keepalive) {
+            const token = typeof getToken === 'function' ? getToken() : null;
+            const absUrl = makeAbsoluteForFetch(apiEndpoint);
+            const headers = {'Content-Type': 'application/json'};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            await fetch(absUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ ticks: batch }),
+                keepalive: true,
+            });
+            return;
+        }
+
+        await axiosInstance.post(
+            endpointRel,
+            { ticks: batch },
+            { meta: { skipAuthRedirect: true }}
+        );
+
     } catch (error) {
         queue.unshift(...batch);
     }
@@ -76,7 +109,7 @@ export function stopTicking() {
         document.removeEventListener('visibilitychange', visibilityHandler);
         visibilityHandler = null;
     }
-    flushTicks({ keepalive: true});
+    void flushTicks({ keepalive: true});
 }
 
 

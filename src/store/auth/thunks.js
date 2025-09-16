@@ -1,26 +1,19 @@
-import { signInWithGoogle } from "../../firebase/providers";
-import { checkingCredentials, login, logout } from "./authSlice"
-
-
-export const checkingAuthentication = () => {
-    return async( dispatch ) => {
-
-        dispatch( checkingCredentials() );
-    }
-}
+import { signInWithGoogle, logoutFirebase } from "../../firebase/providers";
+import { checkingCredentials, login, logout, setToken } from "./authSlice"
 
 
 export const startGoogleSignIn = () => {
     return async (dispatch) => {
-    dispatch(checkingCredentials());
-    try {
-      const result = await signInWithGoogle();
-      if (!result.ok) return dispatch(logout({ errorMessage: result.errorMessage }));
-      // OJO: el observer de App también hará login; este dispatch es opcional.
-      dispatch(login(result));
-      // si quieres navegar aquí, puedes hacerlo desde el componente cuando vea auth.authenticated
-    } catch (err) {
-      dispatch(logout({ errorMessage: err.message }));
-    }
+      dispatch(checkingCredentials());
+      const res = await signInWithGoogle();
+      if (!res.ok) return dispatch(logout({ errorMessage: res.errorMessage }));
+      dispatch(login(res));
+      dispatch(setToken(res.token));
+  };
+};
+
+export const startLogout = () => {
+  return async (dispatch) => {
+    try { await logoutFirebase(); } finally { dispatch(logout()); }
   };
 };

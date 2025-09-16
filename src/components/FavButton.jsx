@@ -1,57 +1,53 @@
 import { useDispatch, useSelector } from "react-redux";
 import { addFavorite, removeFavorite, toggleLocal } from "../store/favoritesSlice";
 import { FaRegHeart } from "react-icons/fa";
+import { selectIsAuthenticated, selectToken } from "../store/auth/authSlice";
 
 
-export const FavButton = ({ trackId, size = 16, className = ''}) => {
-    const dispatch = useDispatch();
-    const favs = useSelector((s) => s.favorites.ids);
-    const isFav = favs.includes(trackId);
-    const isAuth = useSelector((s) => s.auth.status === 'authenticated');
+export const FavButton = ({ trackId, size = 16, className = "" }) => {
+  const dispatch = useDispatch();
+  const isAuth = useSelector(selectIsAuthenticated);
+  const token  = useSelector(selectToken);
+  const favs   = useSelector((s) => s.favorites.ids || []);
 
-    const onToggle = async (e) => {
-        e.stopPropagation();
+  const id = String(trackId ?? "");
+  const isFav = id && favs.includes(id);
+  const canToggle = isAuth && !!token && !!id;
 
-        const apiToken = localStorage.getItem('token');
+  const onToggle = async (e) => {
+    e.stopPropagation();
+    if (!canToggle) {
+      // aquí podrías abrir login modal o navegar a /login si quieres
+      // navigate('/login', { state: { from: location } });
+      return;
+    }
 
-        console.log('[FavButton] click ->', {
-            trackId,
-            isAuth,               // ojo: si tu slice usa status, mejor: useSelector(s => s.auth.status==='authenticated')
-            isFav,
-            hasApiToken: !!apiToken
-        });
-
-        if (!isAuth || !trackId || !apiToken) {
-
-        console.warn('[FavButton] bloqueado por guard:', {
-            noAuth: !isAuth,
-            noTrackId: !trackId,
-            noToken: !apiToken,
-        });
-
-          return;
-        } 
-
-        dispatch(toggleLocal(trackId));
-        try {
-            if (isFav) {
-                await dispatch(removeFavorite(trackId)).unwrap();
-            } else {
-                await dispatch(addFavorite(trackId)).unwrap();
-            }
-        } catch (error) {
-            dispatch(toggleLocal(trackId));
-        }
-    };
+    // optimista
+    dispatch(toggleLocal(id));
+    try {
+      if (isFav) {
+        await dispatch(removeFavorite(id)).unwrap();
+      } else {
+        await dispatch(addFavorite(id)).unwrap();
+      }
+    } catch {
+      // revert en error
+      dispatch(toggleLocal(id));
+    }
+  };
 
   return (
     <button
-        aria-label={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-        onClick={onToggle}
-        className={`rounded-full p-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1DF0D8]/60 ${className}`}
-        title={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+      type="button"
+      aria-label={isFav ? "Quitar de favoritos" : "Añadir a favoritos"}
+      aria-pressed={isFav}
+      onClick={onToggle}
+      disabled={!canToggle}
+      className={`rounded-full p-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1DF0D8]/60 disabled:opacity-50 ${className}`}
+      title={isFav ? "Quitar de favoritos" : "Añadir a favoritos"}
     >
-        <FaRegHeart size={size} className={isFav ? 'fill-[#1DF0D8]' : 'fill-white/40'} />
+      {/* usa color en vez de fill para asegurar estilo en los íconos */}
+      <FaRegHeart size={size} className={isFav ? "text-[#1DF0D8]" : "text-white/40"} />
     </button>
   );
-}
+};
