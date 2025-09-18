@@ -8,10 +8,10 @@ function Item({ to, icon: Icon, label, onClick }) {
     <NavLink to={to} onClick={onClick}>
       {({ isActive }) => (
         <div className={`flex flex-col items-center justify-center w-16 px-1 py-1
-                         ${isActive ? "text-emerald-300" : "text-gray-300"}`}>
+                         ${isActive ? "text-gray-300" : "text-[#AC4BEB]"}`}>
           <Icon className="w-5 h-5" />
           <span className="text-[11px] mt-0.5 leading-none">{label}</span>
-          <span className={`mt-1 h-[2px] w-6 rounded-full ${isActive ? "bg-emerald-400" : "bg-transparent"}`} />
+          <span className={`mt-1 h-[2px] w-6 rounded-full ${isActive ? "text-[#AC4BEB]" : "bg-transparent"}`} />
         </div>
       )}
     </NavLink>

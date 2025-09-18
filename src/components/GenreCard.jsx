@@ -17,17 +17,18 @@ const SLUG_TO_GENRE = {
   jazz: "Jazz",
 };
 
-const HEADER_CLASS = {
-  Rock:   "from-[#3da9f2] to-[#165a9e]",
-  Pop:    "from-[#fce38a] to-[#f38181]",
-  Blues:  "from-[#e35749] to-[#a13e35]",
-  Classic:"from-[#cbd5e1] to-[#475569]",
-  Dubstep:"from-[#34d399] to-[#065f46]",
-  Electro:"from-[#a78bfa] to-[#4c1d95]",
-  HipHop:"from-[#f59e0b] to-[#b45309]",
-  Reggae: "from-[#34d399] to-[#059669]",
-  House:  "from-[#60a5fa] to-[#1d4ed8]",
-  Jazz:   "from-[#f472b6] to-[#be185d]",
+const BRAND_GRADIENT_3 = "bg-[linear-gradient(90deg,_#240A3D_0%,_#3B0F66_12%,_#5A1E95_26%,_#7A2CC6_40%,_#AC4BEB_52%,_#7A2CC6_66%,_#3B0F66_84%,_#240A3D_100%)]";
+export const HEADER_CLASS = {
+  Rock:   BRAND_GRADIENT_3,
+  Pop:    BRAND_GRADIENT_3,
+  Blues:  BRAND_GRADIENT_3,
+  Classic:BRAND_GRADIENT_3,
+  Dubstep:BRAND_GRADIENT_3,
+  Electro:BRAND_GRADIENT_3,
+  HipHop: BRAND_GRADIENT_3,
+  Reggae: BRAND_GRADIENT_3,
+  House:  BRAND_GRADIENT_3,
+  Jazz:   BRAND_GRADIENT_3,
 };
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";          
@@ -135,8 +136,6 @@ const columns = useMemo(() => ([
   },
 ]), [currentTrack, isPlaying]);
 
-  const customStyles = { headCells: { style: { fontWeight: "bold", fontSize: "16px" } } };
-
   const key = (g) => `tracks:${g}`;
 
   useEffect(() => {
@@ -161,6 +160,34 @@ const columns = useMemo(() => ([
     })();
     return () => { ignore = true; };
   }, [genre]);
+
+  const customStyles = {
+    table: { style: { backgroundColor: '#000' } },
+
+    headRow: {
+        style: {
+        backgroundColor: '#000',
+        borderBottomStyle: 'solid',
+        borderBottomWidth: '1px',
+        borderBottomColor: 'rgba(255,255,255,0.25)',
+        },
+    },
+
+    rows: {
+        style: {
+        backgroundColor: '#000',
+        borderBottomStyle: 'solid',          // ← importante
+        borderBottomWidth: '1px',            // ← importante
+        borderBottomColor: 'rgba(255,255,255,0.18)', // ← color de línea
+        },
+        highlightOnHoverStyle: {
+        backgroundColor: 'rgba(29,240,216,0.08)',
+        },
+    },
+
+    headCells: { style: { color: '#AC4BEB', fontWeight: 700 } },
+    cells:     { style: { color: '#AC4BEB' } },
+    };
 
   const conditionalRowStyles = [
   {
@@ -188,7 +215,7 @@ const columns = useMemo(() => ([
 
   return (
     <>
-      <div className={`bg-gradient-to-b ${HEADER_CLASS[genre] ?? "from-gray-700 to-gray-900"} w-full h-[200px] p-6 rounded-lg flex items-end`}>
+      <div className={`bg-gradient-to-b ${HEADER_CLASS[genre] ?? "from-gray-700 to-gray-900"} w-full h-[100px] p-6 rounded-lg flex items-end`}>
         <h2 className="text-5xl">{genre}</h2>
       </div>
 

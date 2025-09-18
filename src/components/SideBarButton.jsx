@@ -6,7 +6,7 @@ export const SideBarButton = ({ to, title, icon }) => {
   return (
     <NavLink
       to={to}
-      end             
+      end
       className={({ isActive }) =>
         clsx(
           "flex flex-col items-center justify-center gap-1",
@@ -19,23 +19,23 @@ export const SideBarButton = ({ to, title, icon }) => {
     >
       <span
         className="
-             text-xl leading-none text-[#00EFEC]
-            [filter:drop-shadow(0_0_2px_rgba(0,239,236,0.5))_drop-shadow(0_0_6px_rgba(0,239,236,0.25))]
-             "
+          text-xl leading-none text-[#AC4BEB]
+          [filter:drop-shadow(0_0_2px_rgba(172,75,235,0.55))_drop-shadow(0_0_6px_rgba(172,75,235,0.35))]
+        "
       >
-            {icon}
+        {icon}
       </span>
 
-    {title && (
-    <span
-        className="
-            leading-none text-[#00EFEC]
-            [text-shadow:0_0_2px_rgba(0,239,236,0.5),0_0_6px_rgba(0,239,236,0.25)]
-            "
-    >
-        {title}
-    </span>
-)}
+      {title && (
+        <span
+          className="
+            leading-none text-[#AC4BEB]
+            [text-shadow:0_0_2px_rgba(172,75,235,0.55),0_0_6px_rgba(172,75,235,0.35)]
+          "
+        >
+          {title}
+        </span>
+      )}
     </NavLink>
   );
 };

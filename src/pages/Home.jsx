@@ -37,8 +37,8 @@ export const Home = () => {
     <div className="w-full h-full bg-black rounded-3xl">
       <h2
         className="
-          text-3xl font-exo font-light text-[#1DF0D8] mb-5
-          [filter:drop-shadow(0_0_2px_rgba(29,240,216,0.7))_drop-shadow(0_0_6px_rgba(29,240,216,0.4))]
+          text-3xl font-exo font-light text-[#AC4BEB] mb-5
+          [text-shadow:0_0_2px_rgba(172,75,235,0.55),0_0_6px_rgba(172,75,235,0.35)]
         "
       >
         Top genres
