@@ -103,17 +103,34 @@ export const Favorites = () => {
   ]), [dispatch]);
 
     const customStyles = {
-        headCells: { style: { fontWeight: "bold", fontSize: "16px"} },
+    table: { style: { backgroundColor: '#000' } },
+
+    headRow: {
+        style: {
+        backgroundColor: '#000',
+        borderBottomStyle: 'solid',
+        borderBottomWidth: '1px',
+        borderBottomColor: 'rgba(255,255,255,0.25)',
+        },
+    },
+
+    rows: {
+        style: {
+        backgroundColor: '#000',
+        borderBottomStyle: 'solid',          // ← importante
+        borderBottomWidth: '1px',            // ← importante
+        borderBottomColor: 'rgba(255,255,255,0.18)', // ← color de línea
+        },
+        highlightOnHoverStyle: {
+        backgroundColor: 'rgba(29,240,216,0.08)',
+        },
+    },
+
+    headCells: { style: { color: '#AC4BEB', fontWeight: 700 } },
+    cells:     { style: { color: '#AC4BEB' } },
     };
 
-    const conditionalRowStyles = [
-    {
-      when: (r) =>
-        currentTrack && toAbsoluteUrl(r.audioUrl) === currentTrack.audioPath,
-      style: {}, // si quieres, marca fila activa aquí
-    },
-  ];
-
+  
     if (!isAuth || !token) {
         return ( 
             <div className="p-4 text-gray-300">
@@ -128,7 +145,7 @@ export const Favorites = () => {
     
   return (
     <div className="mt-6">
-        <h2 className="text-white text-xl mb-4">My favourites</h2>
+        <h2 className="text-[#AC4BEB] text-xl mb-4">My favourites</h2>
         <DataTable
             columns={columns}
             data={tracks || []}
@@ -138,7 +155,6 @@ export const Favorites = () => {
             dense
             pointerOnHover
             highlightOnHover
-            conditionalRowStyles={conditionalRowStyles}
             onRowDoubleClicked={handlePlayRow}
             onRowClicked={(row, e) => { if (e?.detail === 2) handlePlayRow(row); }}
         />

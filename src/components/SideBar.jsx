@@ -128,12 +128,12 @@ export const SideBar = ({ compact = false, onNavigate }) => {
       <div className="flex-1 flex items-center justify-center">
         <ul className={`flex flex-col items-center ${gapClass}`}>
           <li>
-            <span className="text-[#1DF0D8] text-xl leading-none">
+            <span className="text-[#AC4BEB] text-xl leading-none">
               <SideBarButton
                 title={compact ? "Home" : (collapsed ? "" : "Home")}
                 to="/"
                 icon={<HiHome />}
-                iconClassName="text-[#1DF0D8]"
+                iconClassName="text-[#AC4BEB]"
                 onClick={onNavigate}
                 className={itemPad}
               />
