@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { axiosInstance } from '../../api/axiosInstance';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
-import { login } from '../../store/auth/authSlice';
-import { fetchFavoriteTracks } from '../../store/favoritesSlice';
+import { checkingCredentials } from '../../store/auth/authSlice';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { FirebaseAuth } from '../../firebase/config';
 
 export const Register = () => {
   const [form, setForm] = useState({
@@ -67,49 +67,36 @@ export const Register = () => {
   };
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async(e) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    const isValid = validate();
-    if (!isValid) return;
+    if (!validate()) return;
 
-    const { name, email, password } = form;
-
+    dispatch(checkingCredentials());
     try {
-      const { data } = await axiosInstance.post('/auth/new', { name, email, password });
-
-      if (!data?.token) throw new Error('Token not received');
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('uid', data.uid);
-      localStorage.setItem('name', data.name);
-      localStorage.setItem('email', email);
-
-      dispatch(
-        login({
-          uid: data.uid,
-          email,
-          displayName: data.name,
-          photoURL: null
-        })
+      const { user } = await createUserWithEmailAndPassword(
+        FirebaseAuth,
+        form.email,
+        form.password
       );
 
-      dispatch(fetchFavoriteTracks());
+      const fullName = `${form.name} ${form.lastName}`.trim();
+      if (fullName) {
+        await updateProfile(user, { displayName: fullName });
+      }
 
-      navigate('/');
-      
+      navigate('/', { replace: true });
     } catch (error) {
-      const message = error.response?.data?.msg || 'Register failed';
-      setErrorMsg(message);
-
-      
+      const code = error?.code || '';
+      let msg = error?.message || 'Register failed';
+      if (code === 'auth/email-already-in-use') msg = 'Email is already in use';
+      if (code === 'auth/invalid-email') msg = 'Invalid email';
+      if (code === 'auth/weak-password') msg = 'Password should be at least 6 characters';
+      setErrorMsg(msg);
     }
   };
 
@@ -167,7 +154,7 @@ export const Register = () => {
           />
           <button
             type='button'
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() => setShowPassword((s) => !s)}
             className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800'
           >
             {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -190,7 +177,7 @@ export const Register = () => {
           />
           <button
             type='button'
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() => setShowPassword((s) => !s)}
             className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800'
           >
             {showPassword ? <FaEyeSlash /> : <FaEye />}

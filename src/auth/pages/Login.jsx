@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { axiosInstance } from '../../api/axiosInstance';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import api from '../../api/axios';
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseAuth, GoogleProvider } from '../../firebase/config'; 
-import { login } from '../../store/auth/authSlice';
-import { useLocation } from 'react-router-dom';
+import { checkingCredentials } from '../../store/auth/authSlice';
 
 export const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -14,91 +13,46 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const location = useLocation();                            // ← NUEVO
-  const from = location.state?.from?.pathname || '/';        // ← NUEVO
+  const location = useLocation();                           
+  const from = location.state?.from?.pathname || '/';        
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { status, errorMessage } = useSelector((s) => s.auth);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((s) => ({ ...s, [e.target.name]: e.target.value}));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg(null);
     setSubmitting(true);
+    dispatch(checkingCredentials());
 
     try {
-      const { data } = await axiosInstance.post('/auth', formData, {
-        meta: { skipAuthRedirect: true }
-      });
+      await signInWithEmailAndPassword(FirebaseAuth, formData.email, formData.password);
 
-      const { token, uid, name, email, photoURL } = data || {};
-      if (!token) throw new Error('Token not received');
-
-      localStorage.setItem('token', token);
-      localStorage.setItem('uid', uid);
-      localStorage.setItem('name', name || '');
-      if (email) localStorage.setItem('email', email);
-      if (photoURL) localStorage.setItem('photoURL', photoURL);
-
-      dispatch(
-        login({
-          uid,
-          email: email || formData.email,
-          displayName: name || '',
-          photoURL: photoURL || null
-        })
-      );
-
-      navigate(from, { replace: true });                     // ← CAMBIO
+      navigate(from, { replace: true });
     } catch (error) {
-      const message = error.response?.data?.msg || 'Login failed';
-      setErrorMsg(message);
-    } finally {
+      setErrorMsg(error?.message || 'Login failed');
       setSubmitting(false);
     }
   };
 
+
   const onGoogleSignIn = async () => {
     setErrorMsg(null);
+    setSubmitting(true);
+    dispatch(checkingCredentials());
+
     try {
-      const cred = await signInWithPopup(FirebaseAuth, GoogleProvider);
+      const provider = GoogleProvider || new GoogleAuthProvider();
+      await signInWithPopup(FirebaseAuth, provider);
 
-      const gCred = GoogleAuthProvider.credentialFromResult(cred);
-      if (!gCred?.idToken) throw new Error('No Google ID token in credential');
-      const idToken = gCred.idToken;
-
-      const { data } = await axiosInstance.post(
-        '/auth/google',
-        { idToken },
-        { meta: { skipAuthRedirect: true } }
-      );
-
-      if (!data?.token) throw new Error('Token not received from API');
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('uid', cred.user.uid);
-      localStorage.setItem('name', cred.user.displayName || '');
-      localStorage.setItem('email', cred.user.email || '');
-      localStorage.setItem('photoURL', cred.user.photoURL || cred.user.providerData?.[0]?.photoURL || '');
-
-      // 👇 Refleja sesión en Redux para que SideBar muestre la foto y abra el menú
-      dispatch(login({
-        uid: cred.user.uid,
-        email: cred.user.email || '',
-        displayName: cred.user.displayName || '',
-        photoURL: localStorage.getItem('photoURL') || null,
-      }));
-
-      navigate(from, { replace: true });                     // ← CAMBIO
+      navigate(from, { replace: true});
     } catch (error) {
-      console.error('[Login] GoogleSignIn error status:', error?.response?.status);
-      console.error('[Login] GoogleSignIn error data:', error?.response?.data);
-      console.error('[Login] GoogleSignIn error msg:', error?.message);
-      setErrorMsg('Google sign-in failed');
+      setErrorMsg(error?.message || 'Google sign-in failed');
+      setSubmitting(false);
     }
   };
 
@@ -113,8 +67,10 @@ export const Login = () => {
               className="bg-gray-200 text-black border-0 rounded-md p-2 w-full mb-4 md:mb-0"
               placeholder="Email"
               name="email"
+              type='email'
               value={formData.email}
               onChange={handleChange}
+              required
             />
             <div className="relative w-full">
               <input
@@ -124,6 +80,7 @@ export const Login = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
+                required
               />
               <button
                 type="button"
@@ -149,6 +106,7 @@ export const Login = () => {
             <button
               type="button"
               onClick={onGoogleSignIn}
+              disabled={submitting}
               className="flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white py-2 rounded-md hover:from-indigo-600 hover:to-blue-600 transition w-full"
             >
               <svg className="w-5 h-5" viewBox="0 0 533.5 544.3">...</svg>

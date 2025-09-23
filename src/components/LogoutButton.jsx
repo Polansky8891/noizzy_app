@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { signOut } from "firebase/auth";
 import { FirebaseAuth } from "../firebase/config";
 import { logout } from "../store/auth/authSlice";
-import { axiosInstance } from "../api/axiosInstance";
+import api from "../api/axios";
 
 export default function LogoutButton() {
     const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function LogoutButton() {
         localStorage.removeItem('email');
         localStorage.removeItem('photoURL');
 
-        delete axiosInstance.defaults.headers.common?.Authorization;
+        delete api.defaults.headers.common?.Authorization;
 
         dispatch(logout());
 

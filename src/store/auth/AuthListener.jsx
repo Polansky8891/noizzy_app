@@ -1,36 +1,80 @@
 // src/auth/AuthListener.jsx
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, onIdTokenChanged } from 'firebase/auth';
 import { FirebaseAuth } from '../../firebase/config';
-import { login, logout } from './authSlice';
+import { login, logout, setToken, checkingCredentials } from './authSlice';
 
 export default function AuthListener() {
   const dispatch = useDispatch();
+  const mountedRef = useRef(true);
+  const lastTokenRef = useRef(null);
 
   useEffect(() => {
-    // 1) Hidrata Redux una sola vez desde localStorage
-    const token = localStorage.getItem('token');
-    if (token) {
-      dispatch(login({
-        uid: localStorage.getItem('uid') || '',
-        email: localStorage.getItem('email') || '',
-        displayName: localStorage.getItem('name') || '',
-        photoURL: localStorage.getItem('photoURL') || null,
-      }));
-    } else {
-      dispatch(logout());
-    }
+    mountedRef.current = true;
+    dispatch(checkingCredentials());
 
-    // 2) Listener de Firebase: si no hay token, aseguramos logout
-    const unsub = onAuthStateChanged(FirebaseAuth, () => {
-      const hasToken = !!localStorage.getItem('token');
-      if (!hasToken) dispatch(logout());
-      // Si hay token, no tocamos Redux aquí (ya está hidratado)
+    const safeSetToken = (t) => {
+      if (!mountedRef.current) return;
+      if (t && lastTokenRef.current === t) return;
+      lastTokenRef.current = t || null;
+      dispatch(setToken(t || null));
+    };
+
+    const unsubAuth = onAuthStateChanged(FirebaseAuth, async (user) => {
+      if (!mountedRef.current) return;
+
+      if (!user) {
+        lastTokenRef.current = null;
+        dispatch(setToken(null));
+        dispatch(logout());
+        return;
+      }
+      try {
+        const t = await user.getIdToken();
+        safeSetToken(t);
+        dispatch(
+          login({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+          })
+        );
+      } catch {
+        safeSetToken(null);
+      }
     });
 
-    return unsub;
-  }, [dispatch]);
+    const unsubId = onIdTokenChanged(FirebaseAuth, async (user) => {
+      if (!mountedRef.current || !user) return;
+      try {
+        const t = await user.getIdToken();
+        safeSetToken(t);
+      } catch {
+        safeSetToken(null);
+      }
+    });
 
+    const onFocus = async () => {
+      const u = FirebaseAuth.currentUser;
+      if (!u) return;
+      try {
+        const t = await u.getIdToken(true);
+        safeSetToken(t);
+      } catch {
+        safeSetToken(null);
+      }
+    };
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      mountedRef.current = false;
+      unsubAuth?.();
+      unsubId?.();
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [dispatch]);
+  
   return null;
 }

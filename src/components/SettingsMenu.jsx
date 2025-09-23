@@ -3,7 +3,7 @@ import { logout } from "../store/auth/authSlice";
 import { useDispatch } from "react-redux";
 import { signOut } from "firebase/auth";
 import { FirebaseAuth } from "../firebase/config";
-import { axiosInstance } from "../api/axiosInstance";
+import api from "../api/axios";
 
 export const SettingsMenu = ({ closeMenu }) => {
 
@@ -23,8 +23,8 @@ export const SettingsMenu = ({ closeMenu }) => {
      localStorage.removeItem('email');
      localStorage.removeItem('photoURL');
 
-     if (axiosInstance?.defaults?.headers?.common) {
-        delete axiosInstance.defaults.headers.common.Authorization;
+     if (api?.defaults?.headers?.common) {
+        delete api.defaults.headers.common.Authorization;
      }
 
      dispatch(logout());
