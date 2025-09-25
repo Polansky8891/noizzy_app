@@ -43,6 +43,7 @@ export const GenreCard = () => {
       title: row.title,
       artist: row.artist,
       audioPath,
+      genre,
       cover: toAbs(row.coverUrl) || row.cover || row.image || null,
     });
   }, [playTrack]);

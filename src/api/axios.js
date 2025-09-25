@@ -17,34 +17,37 @@ api.interceptors.request.use(async (config) => {
     const idToken = await user.getIdToken(); // NO fuerza refresh salvo que haga falta
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${idToken}`;
-    console.log('[API] add Authorization len=', idToken?.length, 'head=', idToken?.slice(0,6), 'tail=', idToken?.slice(-6));
-  } else {
-    console.log('[API] NO currentUser -> no Authorization header');
   }
   return config;
 });
 
+let refreshing = null;
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const original = error.config;
-    if (error?.response?.status === 401 && !original.__isRetry) {
-      original.__isRetry = true;
-      try {
-        const user = FirebaseAuth.currentUser;
-        if (!user) throw new Error('no-user');
-        const freshToken = await user.getIdToken(true); // fuerza refresh
-        store.dispatch(setToken(freshToken));
-        original.headers = original.headers || {};
-        original.headers.Authorization = `Bearer ${freshToken}`;
-        return api(original);
-      } catch (e) {
-        store.dispatch(logout());
-      }
+    const { response, config } = error || {};
+    if (!response || response.status !== 401 || config?._retry) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    config._retry = true;
+    try {
+      if (!refreshing) {
+        const u = FirebaseAuth.currentUser;
+        if (!u) throw new Error('no-user');
+        refreshing = u.getIdToken(true); // fuerza refresh
+      }
+      const newToken = await refreshing;
+      refreshing = null;
+
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${newToken}`;
+      return api(config); // reintenta
+    } catch (e) {
+      refreshing = null;
+      return Promise.reject(error);
+    }
   }
 );
-
 
 export default api;
