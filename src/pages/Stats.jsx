@@ -16,7 +16,7 @@ const emptySummary = {
 };
 
 export const Stats = () => {
-  const { status } = useSelector(selectAuth);
+  const { status, token } = useSelector(selectAuth);
 
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -73,12 +73,12 @@ export const Stats = () => {
 
   // 🚦 Dispara SOLO cuando estás autenticado
   useEffect(() => {
-    if (status !== "authenticated") {
+    if (status !== "authenticated" || !token) {
       setLoading(false);
       return;
     }
     fetchStats();
-  }, [status, fetchStats, reloadKey]);
+  }, [status, fetchStats,token, reloadKey]);
 
   const dailyMinutes = useMemo(() => {
     const d = data?.daily ?? [];
