@@ -31,7 +31,7 @@ export function MobileHeader({ onToggle }) {
           onClick={onToggle}
           aria-label="Abrir menú"
           className="inline-flex items-center justify-center w-9 h-9 rounded-md
-                     border border-white/15 text-[#AC4BEB] hover:bg-white/5"
+                     border border-white/15 text-[#0A84FF] hover:bg-white/5"
         >
           <FaBars className="w-5 h-5" />
         </button>
@@ -52,7 +52,7 @@ export function MobileHeader({ onToggle }) {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <CgProfile className="w-6 h-6 text-[#AC4BEB]" />
+              <CgProfile className="w-6 h-6 text-[#0A84FF]" />
             )}
           </button>
 
@@ -72,7 +72,7 @@ export function MobileHeader({ onToggle }) {
         </div>
         ) : (
           <Link to='/profile' className="text-lg px-4 no-underline" arial-label="Iniciar sesión">
-              <CgProfile className="w-6 h-6 text-[#AC4BEB]" />
+              <CgProfile className="w-6 h-6 text-[#0A84FF]" />
           </Link>
         )}
       </div>

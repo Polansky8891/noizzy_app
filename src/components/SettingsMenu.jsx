@@ -6,46 +6,42 @@ import { FirebaseAuth } from "../firebase/config";
 import api from "../api/axios";
 
 export const SettingsMenu = ({ closeMenu }) => {
-
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const handleClick = async () => {
-     try {
+    try {
       await signOut(FirebaseAuth);
-     } catch (error) {
-      console.warn('Firebase signOut error:', error);
-     }
+    } catch (error) {
+      console.warn("Firebase signOut error:", error);
+    }
 
-     localStorage.removeItem('token');
-     localStorage.removeItem('uid');
-     localStorage.removeItem('name');
-     localStorage.removeItem('email');
-     localStorage.removeItem('photoURL');
+    localStorage.removeItem("token");
+    localStorage.removeItem("uid");
+    localStorage.removeItem("name");
+    localStorage.removeItem("email");
+    localStorage.removeItem("photoURL");
 
-     if (api?.defaults?.headers?.common) {
-        delete api.defaults.headers.common.Authorization;
-     }
+    if (api?.defaults?.headers?.common) {
+      delete api.defaults.headers.common.Authorization;
+    }
 
-     dispatch(logout());
+    dispatch(logout());
 
-     closeMenu?.();
-     navigate('/profile', { replace: true });
-  }
+    closeMenu?.();
+    navigate("/profile", { replace: true });
+  };
 
   return (
-
-    <div 
-      className="bg-[#1C1C1C] text-white rounded-xl shadow-lg border border-white/10 p-3 w-56"
-      >
+    <div className="bg-[#1C1C1C] text-white rounded-xl shadow-lg border border-white/10 p-3 w-56">
       <ul className="space-y-1">
         <li>
           <button
             onClick={() => {
-              navigate('/account');
+              navigate("/account");
               closeMenu?.();
             }}
-            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
+            className="w-full text-left text-[#0A84FF] px-4 py-2 transition-all duration-200 hover:text-lg"
           >
             Account
           </button>
@@ -56,7 +52,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               alert("Option 2 clicked");
               closeMenu();
             }}
-            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
+            className="w-full text-left text-[#0A84FF] px-4 py-2 transition-all duration-200 hover:text-lg"
           >
             Settings
           </button>
@@ -64,18 +60,12 @@ export const SettingsMenu = ({ closeMenu }) => {
         <li>
           <button
             onClick={handleClick}
-            className="w-full text-left text-white px-4 py-2 hover:bg-[#1DF0D8]"
+            className="w-full text-left text-[#0A84FF] px-4 py-2 transition-all duration-200 hover:text-lg"
           >
             Log out
           </button>
         </li>
-        
       </ul>
     </div>
   );
 };
-            
-    
- 
-    
-  

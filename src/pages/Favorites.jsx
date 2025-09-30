@@ -92,7 +92,7 @@ export const Favorites = () => {
                 aria-label="Remove from favourites"
                 className="group p-2 rounded-full border border-white/10"
               >
-                <FiTrash2 className="w-4 h-4 text-black/70 group-hover:text-white" />
+                <FiTrash2 className="w-4 h-4 text-[#0A84FF] group-hover:text-white" />
               </button>
             </div>
           );
@@ -117,8 +117,8 @@ export const Favorites = () => {
       },
       highlightOnHoverStyle: { backgroundColor: "rgba(29,240,216,0.08)" },
     },
-    headCells: { style: { color: "#AC4BEB", fontWeight: 700 } },
-    cells: { style: { color: "#AC4BEB" } },
+    headCells: { style: { color: "#0A84FF", fontWeight: 700 } },
+    cells: { style: { color: "#0A84FF" } },
   };
 
   const conditionalRowStyles = [
@@ -143,7 +143,7 @@ export const Favorites = () => {
 
   return (
     <div className="mt-6">
-      <h2 className="text-[#AC4BEB] text-xl mb-4">My favourites</h2>
+      <h2 className="text-[#0A84FF] text-xl mb-4">My favourites</h2>
       <DataTable
         columns={columns}
         data={tracks || []}

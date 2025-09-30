@@ -56,7 +56,7 @@ export const MusicPlayer = () => {
   return (
     <div
       className="
-        w-full bg-black/90 backdrop-blur-md border-t border-white/10
+        w-full bg-black/90 backdrop-blur-md 
         pb-[env(safe-area-inset-bottom)]
       "
     >
@@ -80,10 +80,10 @@ export const MusicPlayer = () => {
             {/* Título + artista + fav */}
             <div className="mb-1 relative pr-8 lg:pr-10"> {/* pr para que el fav no tape el texto */}
             <div className="mx-auto max-w-[80vw] lg:max-w-3xl text-center">
-              <div className="text-[#AC4BEB] text-xs sm:text-sm truncate">
+              <div className="text-[#0A84FF] text-xs sm:text-sm truncate">
                 {currentTrack?.title}
               </div>
-              <div className="text-[11px] sm:text-xs text-[#AC4BEB]/80 truncate">
+              <div className="text-[11px] sm:text-xs text-[#0A84FF]/80 truncate">
                 {currentTrack?.artist || ""}
               </div>
             </div>
@@ -101,10 +101,10 @@ export const MusicPlayer = () => {
           </div>
 
             {/* Barra de progreso */}
-            <div className="mx-auto max-w-3xl flex items-center justify-center text-[11px] sm:text-xs text-[#AC4BEB] select-none">
+            <div className="mx-auto max-w-3xl flex items-center justify-center text-[11px] sm:text-xs text-[#0A84FF]  select-none">
               <span className="w-10 text-left">{fmt(progress)}</span>
               <div
-                className="flex-1 h-2 mx-2 bg-gradient-to-r from-gray-600 to-gray-800 rounded-full overflow-hidden cursor-pointer"
+                className="flex-1 h-2 mx-2 bg-gradient-to-r from-gray-600 to-gray-800 rounded-full  overflow-hidden cursor-pointer"
                 onClick={handleBarClick}
                 role="progressbar"
                 aria-label="Barra de progreso"
@@ -113,7 +113,7 @@ export const MusicPlayer = () => {
                 aria-valuenow={progress || 0}
               >
                 <div
-                  className="h-full bg-[#AC4BEB] rounded-full transition-all"
+                  className="h-full bg-[#0A84FF] rounded-full transition-all"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -123,8 +123,8 @@ export const MusicPlayer = () => {
             {/* Controles compactos en móvil */}
             <div className="
                 mt-2 flex items-center justify-center gap-4 sm:gap-6
-               bg-[#0B0B0B] px-4 py-2 sm:px-6 sm:py-3 rounded-2xl
-               text-[#AC4BEB]">
+               bg-[#0B0B0B] px-4 py-2 sm:px-6 sm:py-3 rounded-2xl border border-[#0A84FF]
+               text-[#0A84FF]">
               <button
                 onClick={() => skipBackward(10)}
                 disabled={controlsDisabled}
@@ -139,7 +139,7 @@ export const MusicPlayer = () => {
                 onClick={togglePlay}
                 disabled={controlsDisabled}
                 className="
-                border border-[#AC4BEB] text-[#AC4BEB]
+                border border-[#0A84FF] text-[#0A84FF]
                 p-2 sm:p-3 rounded-full cursor-pointer transition
                 hover:text-white hover:border-white
                 disabled:cursor-not-allowed disabled:pointer-events-none
@@ -156,7 +156,7 @@ export const MusicPlayer = () => {
                 title="Avanzar 10s"
                 aria-label="Avanzar 10 segundos"
               >
-                <FaStepForward className="text-[#AC4BEB] hover:text-white text-base sm:text-lg" />
+                <FaStepForward className="text-[#0A84FF] hover:text-white text-base sm:text-lg" />
               </button>
 
               <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
@@ -170,9 +170,9 @@ export const MusicPlayer = () => {
                 aria-label={muted ? "Quitar silencio" : "Silenciar"}
               >
                 {muted || volume === 0 ? (
-                  <IoMdVolumeOff className="text-[#AC4BEB] hover:text-white text-lg" />
+                  <IoMdVolumeOff className="text-[#0A84FF] hover:text-white text-lg" />
                 ) : (
-                  <IoMdVolumeMute className="text-[#AC4BEB] hover:text-white text-lg" />
+                  <IoMdVolumeMute className="text-[#0A84FF] hover:text-white text-lg" />
                 )}
               </button>
 
@@ -185,10 +185,10 @@ export const MusicPlayer = () => {
                   value={volume}
                   onChange={(e) => setVolume(+e.target.value)}
                   disabled={controlsDisabled}
-                  className="w-28 accent-[#AC4BEB] disabled:cursor-not-allowed disabled:pointer-events-none"
+                  className="w-28 accent-[#0A84FF] disabled:cursor-not-allowed disabled:pointer-events-none"
                   aria-label="Volumen"
                 />
-                <span className="text-xs text-[#AC4BEB] w-10 text-right">
+                <span className="text-xs text-[#0A84FF] w-10 text-right">
                   {Math.round(volume * 100)}%
                 </span>
               </div>

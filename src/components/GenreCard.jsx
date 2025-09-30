@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import DataTable from "react-data-table-component";
-import axios from "axios";
 import { usePlayer } from "./PlayerContext";
 import api from "../api/axios";
 
@@ -15,10 +14,9 @@ const SLUG_TO_GENRE = {
   hiphop: "Hip-Hop",
   reggae: "Reggae",
   house: "House",
-  jazz: "Jazz",
 };
 
-const BRAND_GRADIENT_3 = "bg-[linear-gradient(90deg,_#240A3D_0%,_#3B0F66_12%,_#5A1E95_26%,_#7A2CC6_40%,_#AC4BEB_52%,_#7A2CC6_66%,_#3B0F66_84%,_#240A3D_100%)]";
+const BRAND_GRADIENT_3 = "bg-[linear-gradient(90deg,_#001020_0%,_#003366_25%,_#0A84FF_50%,_#003366_75%,_#001020_100%)]";
 export const HEADER_CLASS = { Rock:BRAND_GRADIENT_3, Pop:BRAND_GRADIENT_3, Blues:BRAND_GRADIENT_3, Classic:BRAND_GRADIENT_3, Dubstep:BRAND_GRADIENT_3, Electro:BRAND_GRADIENT_3, HipHop:BRAND_GRADIENT_3, Reggae:BRAND_GRADIENT_3, House:BRAND_GRADIENT_3, Jazz:BRAND_GRADIENT_3 };
 
 const toMMSS = (s) => { const n = Math.max(0, Math.floor(Number(s)||0)); const m = Math.floor(n/60); const r = String(n%60).padStart(2,"0"); return `${m}:${r}`; };
@@ -63,7 +61,7 @@ export const GenreCard = () => {
         const onKeyDown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(e); } };
 
         return (
-          <div className={`relative w-12 h-12 rounded-md overflow-hidden ${isActive ? "ring-2 ring-emerald-400" : ""}`}>
+          <div className={`relative w-12 h-12 rounded-md overflow-hidden ${isActive ? "ring-2 ring-[#0A84FF]" : ""}`}>
             <img src={src} alt={row.title} className="w-full h-full object-cover" loading="lazy"
                  onError={(e) => { e.currentTarget.src = "/placeholder-cover.png"; }} />
             <button type="button" aria-label={isActive ? (isPlaying ? "Pausar" : "Reanudar") : "Reproducir"}
@@ -117,8 +115,8 @@ export const GenreCard = () => {
     headRow: { style: { backgroundColor: "#000", borderBottom: "1px solid rgba(255,255,255,0.25)" } },
     rows:   { style: { backgroundColor: "#000", borderBottom: "1px solid rgba(255,255,255,0.18)" },
               highlightOnHoverStyle: { backgroundColor: "rgba(29,240,216,0.08)" } },
-    headCells: { style: { color: "#AC4BEB", fontWeight: 700 } },
-    cells:     { style: { color: "#AC4BEB" } },
+    headCells: { style: { color: "#0A84FF", fontWeight: 700 } },
+    cells:     { style: { color: "#0A84FF" } },
   };
 
   const conditionalRowStyles = [

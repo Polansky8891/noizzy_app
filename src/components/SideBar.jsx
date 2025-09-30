@@ -70,7 +70,7 @@ export const SideBar = ({ compact = false, onNavigate }) => {
   return (
     <aside
       onDoubleClick={handleDoubleClick}
-      className={`w-full h-full bg-[#1C1C1C] text-white ${padClass} ${roundClass} flex flex-col transition-all duration-300 ease-in-out`}
+      className={`w-full h-full bg-[#111111] ${padClass} ${roundClass} flex flex-col transition-all duration-300 ease-in-out`}
     >
       {/* Cabecera/espaciador */}
       <div className="text-lg font-semibold mb-2" />
@@ -143,16 +143,6 @@ export const SideBar = ({ compact = false, onNavigate }) => {
                 className={itemPad}
               />
             </span>
-          </li>
-          <li>
-            <SideBarButton
-              title={compact ? "Library" : (collapsed ? "" : "Library")}
-              to="/library"
-              icon={<MdLibraryMusic />}
-              iconClassName="text-[#1DF0D8]"
-              onClick={onNavigate}
-              className={itemPad}
-            />
           </li>
           <li>
             <SideBarButton
