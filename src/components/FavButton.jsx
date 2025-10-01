@@ -3,55 +3,50 @@ import { addFavorite, removeFavorite, toggleLocal } from "../store/favoritesSlic
 import { FaRegHeart } from "react-icons/fa";
 
 
-export const FavButton = ({ trackId, size = 16, className = ''}) => {
-    const dispatch = useDispatch();
-    const favs = useSelector((s) => s.favorites.ids);
-    const isFav = favs.includes(trackId);
-    const isAuth = useSelector((s) => s.auth.status === 'authenticated');
+const isObjectId = (s) => typeof s === "string" && /^[0-9a-fA-F]{24}$/.test(s);
 
-    const onToggle = async (e) => {
-        e.stopPropagation();
+export const FavButton = ({ trackId, size = 16, className = '' }) => {
+  const dispatch = useDispatch();
+  const favs = useSelector((s) => s.favorites.ids);
+  const isFav = favs.includes(trackId);
+  const isAuth = useSelector((s) => s.auth.status === 'authenticated');
 
-        const apiToken = localStorage.getItem('token');
+  const onToggle = async (e) => {
+    e.stopPropagation();
 
-        console.log('[FavButton] click ->', {
-            trackId,
-            isAuth,               // ojo: si tu slice usa status, mejor: useSelector(s => s.auth.status==='authenticated')
-            isFav,
-            hasApiToken: !!apiToken
-        });
+    // 🚫 Nada de localStorage ni token: el interceptor de axios añade el Bearer.
+    // Guardias mínimas y definitivas
+    if (!isAuth || !isObjectId(trackId)) {
+      console.warn('[FavButton] bloqueado por guard:', {
+        noAuth: !isAuth,
+        badId: !isObjectId(trackId),
+      });
+      return;
+    }
 
-        if (!isAuth || !trackId || !apiToken) {
-
-        console.warn('[FavButton] bloqueado por guard:', {
-            noAuth: !isAuth,
-            noTrackId: !trackId,
-            noToken: !apiToken,
-        });
-
-          return;
-        } 
-
-        dispatch(toggleLocal(trackId));
-        try {
-            if (isFav) {
-                await dispatch(removeFavorite(trackId)).unwrap();
-            } else {
-                await dispatch(addFavorite(trackId)).unwrap();
-            }
-        } catch (error) {
-            dispatch(toggleLocal(trackId));
-        }
-    };
+    // Optimista
+    dispatch(toggleLocal(trackId));
+    try {
+      if (isFav) {
+        await dispatch(removeFavorite(trackId)).unwrap();
+      } else {
+        await dispatch(addFavorite(trackId)).unwrap();
+      }
+    } catch (error) {
+      // Revertir si falla
+      dispatch(toggleLocal(trackId));
+      console.warn('[FavButton] error al persistir favorito:', error);
+    }
+  };
 
   return (
     <button
-        aria-label={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-        onClick={onToggle}
-        className={`rounded-full p-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1DF0D8]/60 ${className}`}
-        title={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+      aria-label={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+      onClick={onToggle}
+      className={`rounded-full p-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1DF0D8]/60 ${className}`}
+      title={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
     >
-        <FaRegHeart size={size} className={isFav ? 'fill-[#1DF0D8]' : 'fill-white/40'} />
+      <FaRegHeart size={size} className={isFav ? 'fill-[#1DF0D8]' : 'fill-white/40'} />
     </button>
   );
-}
+};

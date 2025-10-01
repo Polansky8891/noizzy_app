@@ -41,7 +41,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               navigate("/account");
               closeMenu?.();
             }}
-            className="w-full text-left text-[#0A84FF] px-4 py-2 transition-all duration-200 hover:text-lg"
+            className="w-full text-left text-[#0A84FF] px-4 py-2 rounded-md border border-transparent transition-colors duration-200 hover:border-[#0A84FF]"
           >
             Account
           </button>
@@ -52,7 +52,7 @@ export const SettingsMenu = ({ closeMenu }) => {
               alert("Option 2 clicked");
               closeMenu();
             }}
-            className="w-full text-left text-[#0A84FF] px-4 py-2 transition-all duration-200 hover:text-lg"
+            className="w-full text-left text-[#0A84FF] px-4 py-2 rounded-md border border-transparent transition-colors duration-200 hover:border-[#0A84FF]"
           >
             Settings
           </button>
@@ -60,7 +60,7 @@ export const SettingsMenu = ({ closeMenu }) => {
         <li>
           <button
             onClick={handleClick}
-            className="w-full text-left text-[#0A84FF] px-4 py-2 transition-all duration-200 hover:text-lg"
+            className="w-full text-left text-[#0A84FF] px-4 py-2 rounded-md border border-transparent transition-colors duration-200 hover:border-[#0A84FF]"
           >
             Log out
           </button>
