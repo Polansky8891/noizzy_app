@@ -22,6 +22,15 @@ export const HEADER_CLASS = { Rock:BRAND_GRADIENT_3, Pop:BRAND_GRADIENT_3, Blues
 const toMMSS = (s) => { const n = Math.max(0, Math.floor(Number(s)||0)); const m = Math.floor(n/60); const r = String(n%60).padStart(2,"0"); return `${m}:${r}`; };
 const toAbs = (p, base = import.meta.env.VITE_MEDIA_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:4000/api") => (!p ? "" : /^https?:\/\//i.test(p) ? p : (()=>{ try { return new URL(p, base).href; } catch { return p; }})());
 
+
+const isCoarsePointer = () => {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(pointer: coarse)")?.matches ||
+    navigator.maxTouchPoints > 0
+  );
+};
+
 export const GenreCard = () => {
   const { slug } = useParams();
   const genre = SLUG_TO_GENRE[slug];
@@ -34,17 +43,17 @@ export const GenreCard = () => {
   const [firstLoad, setFirstLoad] = useState(true);
 
   const handlePlayRow = useCallback((row) => {
-    const audioPath = toAbs(row.audioUrl);
-    if (!audioPath) return;
-    playTrack({
-      id: row._id || row.id,
-      title: row.title,
-      artist: row.artist,
-      audioPath,
-      genre,
-      cover: toAbs(row.coverUrl) || row.cover || row.image || null,
-    });
-  }, [playTrack]);
+  const audioPath = toAbs(row.audioUrl);
+  if (!audioPath) return;
+  playTrack({
+    id: row._id || row.id,
+    title: row.title,
+    artist: row.artist,
+    audioPath,
+    genre,
+    cover: toAbs(row.coverUrl) || row.cover || row.image || null,
+  });
+}, [playTrack, genre]);
 
   const columns = useMemo(() => ([
     {
@@ -131,16 +140,37 @@ export const GenreCard = () => {
       </div>
       <div className="mt-6">
         <DataTable
-          columns={columns}
-          data={rows}
-          customStyles={customStyles}
-          progressPending={firstLoad && loading}
-          persistTableHead
-          dense pointerOnHover highlightOnHover
-          conditionalRowStyles={conditionalRowStyles}
-          onRowDoubleClicked={handlePlayRow}
-          onRowClicked={(row, e) => { if (e?.detail === 2) handlePlayRow(row); }}
-        />
+  columns={columns}
+  data={rows}
+  customStyles={customStyles}
+  progressPending={firstLoad && loading}
+  persistTableHead
+  dense
+  pointerOnHover
+  highlightOnHover
+  conditionalRowStyles={conditionalRowStyles}
+
+  // desktop: doble click para reproducir
+  onRowDoubleClicked={handlePlayRow}
+
+  // móvil: un toque en cualquier punto de la fila reproduce
+  onRowClicked={(row, e) => {
+    const pointer = e?.nativeEvent?.pointerType;
+    const touchLike = pointer === "touch" || pointer === "pen" || isCoarsePointer();
+
+    if (touchLike) {
+      const isActive = currentTrack && toAbs(row.audioUrl) === currentTrack.audioPath;
+      if (isActive && typeof togglePlay === "function") {
+        togglePlay();           // si ya es la pista activa, alterna play/pause
+      } else {
+        handlePlayRow(row);     // si no, empieza a reproducirla
+      }
+    } else if (e?.detail >= 2) {
+      // en desktop mantenemos doble click (por si alguien hace doble click rápido)
+      handlePlayRow(row);
+    }
+  }}
+/>
         {!firstLoad && loading && (
           <div className="absolute inset-0 bg-white/60 dark:bg-black/40 animate-pulse pointer-events-none rounded-md" />
         )}

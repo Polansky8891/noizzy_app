@@ -11,13 +11,6 @@ import { API_BASE } from "../api/base";
 const API_URL = API_BASE;
 const MEDIA_BASE = import.meta.env.VITE_MEDIA_BASE_URL || API_URL;
 
-const fmt = (sec) => {
-  const s = Math.floor(sec || 0);
-  const m = Math.floor(s / 60);
-  const r = String(s % 60).padStart(2, "0");
-  return `${m}:${r}`;
-};
-
 const toAbsoluteUrl = (p, base = MEDIA_BASE) => {
   if (!p) return "";
   if (/^https?:\/\//i.test(p)) return p;
@@ -34,8 +27,16 @@ export const Favorites = () => {
   const loading = useSelector(selectFavoritesLoading);
   const isAuth = useSelector((s) => s.auth.status === "authenticated");
 
-  const { playTrack, currentTrack } = usePlayer();
+  const { playTrack, currentTrack, togglePlay } = usePlayer();
   const [firstLoad, setFirstLoad] = useState(true);
+
+  const COARSE = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.matchMedia?.("(pointer: coarse)")?.matches ||
+      navigator.maxTouchPoints > 0
+    );
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -66,23 +67,48 @@ export const Favorites = () => {
 
   const columns = useMemo(
     () => [
-      { name: "Title", selector: (r) => r.title, sortable: false },
-      { name: "Artist", selector: (r) => r.artist, sortable: false },
-      {
-        name: "Duration",
-        selector: (r) => r.duration,
-        cell: (r) => (
-          <div className="w-[120px] text-right tabular-nums">{fmt(r.duration)}</div>
-        ),
-      },
+      // ⬅️ NUEVA: cover al inicio
       {
         name: "",
-        width: "88px", // OK mantener (lo usa la lib internamente)
+        width: "60px",
+        sortable: false,
+        cell: (r) => {
+          const src = toAbsoluteUrl(r.coverUrl || r.cover || r.image);
+          const isActive =
+            currentTrack && toAbsoluteUrl(r.audioUrl) === currentTrack.audioPath;
+          return (
+            <div
+              className={`w-10 h-10 rounded-md overflow-hidden ${
+                isActive ? "ring-2 ring-[#0A84FF]" : ""
+              }`}
+              title={r.title}
+            >
+              <img
+                src={src || "/placeholder-cover.png"}
+                alt={r.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder-cover.png";
+                }}
+              />
+            </div>
+          );
+        },
+      },
+      { name: "Title", selector: (r) => r.title, sortable: false },
+      { name: "Artist", selector: (r) => r.artist, sortable: false },
+
+      // 🗑️ acciones
+      {
+        name: "",
+        width: "56px",                 // antes 88px → más estrecha
         ignoreRowClick: true,
         cell: (r) => {
           const id = r._id || r.id;
           return (
-            <div className="w-full flex items-center justify-end gap-2">
+            // centrado en mobile, a la derecha en ≥ md
+            <div className="flex items-center justify-center md:justify-end pr-1">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -99,7 +125,7 @@ export const Favorites = () => {
         },
       },
     ],
-    [dispatch]
+    [dispatch, currentTrack]
   );
 
   const customStyles = {
@@ -130,7 +156,11 @@ export const Favorites = () => {
   ];
 
   if (!isAuth) {
-    return <div className="p-4 text-gray-300">You must login to see your favourites.</div>;
+    return (
+      <div className="p-4 text-gray-300">
+        You must login to see your favourites.
+      </div>
+    );
   }
 
   if (!firstLoad && !loading && (!tracks || tracks.length === 0)) {
@@ -156,7 +186,22 @@ export const Favorites = () => {
         conditionalRowStyles={conditionalRowStyles}
         onRowDoubleClicked={handlePlayRow}
         onRowClicked={(row, e) => {
-          if (e?.detail === 2) handlePlayRow(row);
+          // móvil/tablet: un toque reproduce (o hace toggle si ya está activa)
+          const pointer = e?.nativeEvent?.pointerType;
+          const touchLike = pointer === "touch" || pointer === "pen" || COARSE;
+
+          if (touchLike) {
+            const isActive =
+              currentTrack && toAbsoluteUrl(row.audioUrl) === currentTrack.audioPath;
+            if (isActive && typeof togglePlay === "function") {
+              togglePlay();
+            } else {
+              handlePlayRow(row);
+            }
+          } else if (e?.detail >= 2) {
+            // desktop: doble clic mantiene el comportamiento anterior
+            handlePlayRow(row);
+          }
         }}
       />
     </div>
