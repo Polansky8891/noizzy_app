@@ -46,17 +46,7 @@ export const SettingsMenu = ({ closeMenu }) => {
             Account
           </button>
         </li>
-        <li>
-          <button
-            onClick={() => {
-              alert("Option 2 clicked");
-              closeMenu();
-            }}
-            className="w-full text-left text-[#0A84FF] px-4 py-2 rounded-md border border-transparent transition-colors duration-200 hover:border-[#0A84FF]"
-          >
-            Settings
-          </button>
-        </li>
+        
         <li>
           <button
             onClick={handleClick}

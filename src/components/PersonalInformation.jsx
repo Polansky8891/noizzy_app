@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import BirthDateField from "./BirthDateField";
+import SelectField from "./SelectField";
 
 
+const GENDERS = ["Male", "Female", "Other"];
+const COUNTRIES = [
+    "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Brazzaville)","Congo (Kinshasa)","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"
+    ];
 
 export const PersonalInformation = () => {
 
@@ -11,7 +17,11 @@ export const PersonalInformation = () => {
     const [email, setEmail] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    
+    const [country, setCountry] = useState("Afghanistan");
+
+    const [sex, setSex] = useState("Male");
+
+    const [birth, setBirth] = useState({ day: 14, month: "January", year: 1988 });
 
     useEffect(() => {
         const storedProfile = localStorage.getItem('profileData');
@@ -24,12 +34,9 @@ export const PersonalInformation = () => {
     }, [])
 
     const handleSave = () => {
-        const profileData = {
-            email
-        };
-
-        localStorage.setItem('profileData', JSON.stringify(profileData));
-    }
+    const profileData = { email, birth };
+    localStorage.setItem('profileData', JSON.stringify(profileData));
+    };
 
 
     
@@ -58,267 +65,50 @@ export const PersonalInformation = () => {
 
             {/* Password */}
             <div>
-                <label className="text-xs flex justify-start font-medium text-[#0A84FF] mb-1">Password</label>
-                <div className="relative">
+            <label
+                htmlFor="password"
+                className="text-xs flex justify-start font-medium text-[#0A84FF] mb-1"
+            >
+                Password
+            </label>
+            <div className="relative">
                 <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="w-full p-3 border border-[#0A84FF] rounded-md focus:outline-none focus:ring focus:ring-[#0A84FF]"
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                className="w-full p-3 border border-[#0A84FF] rounded-md text-[#0A84FF]
+                            focus:outline-none focus:ring focus:ring-[#0A84FF]"
+                autoComplete="new-password"
                 />
                 <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A84FF] hover:text-gray-700"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A84FF] hover:text-gray-700"
                 >
-                    {showPassword ? <FaEye /> : <FaEyeSlash />}
-
+                {showPassword ? <FaEye /> : <FaEyeSlash />}
                 </button>
-                </div>
+            </div>
             </div>
 
             {/* Gender */}
-            <div>
-                <label className="flex justify-start text-sm font-medium text-[#0A84FF] mb-1">Sex</label>
-                <select className="w-full p-3 border border-[#0A84FF] text-[#0A84FF] rounded-md focus:outline-none focus:ring focus:ring-[#0A84FF]">
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
-                </select>
-            </div>
+            <SelectField
+            label="Sex"
+            value={sex}
+            onChange={setSex}
+            options={GENDERS}
+            />
 
             {/* Birth date */}
-            <div>
-                <label className="text-xs flex justify-start font-medium text-[#0A84FF] mb-1">Birth date</label>
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        placeholder="Day"
-                        defaultValue="14"
-                        className="w-1/3 p-3 border text-[#0A84FF] border-[#0A84FF] rounded-md focus:outline-none focus:ring focus:ring-[#0A84FF]"
-                    />
-                    <select className="w-1/3 p-3 border border-[#0A84FF] text-[#0A84FF] rounded-md focus:outline-none focus:ring focus:ring-[#0A84FF]">
-                        <option>January</option>
-                        <option>February</option>
-                        <option>March</option>
-                        <option>April</option>
-                        <option>May</option>
-                        <option>June</option>
-                        <option>July</option>
-                        <option>August</option>
-                        <option>September</option>
-                        <option>October</option>
-                        <option>November</option>
-                        <option>December</option>
-                    </select>
-                    <input
-                        type="text"
-                        placeholder="Year"   
-                        defaultValue="1988"    
-                        className="w-1/3 p-3 border border-[#0A84FF] text-[#0A84FF] rounded-md focus:outline-none focus:ring focus:ring-[#0A84FF]" 
-                    />
-                </div>
-            </div>
+            <BirthDateField value={birth} onChange={setBirth} />
 
             {/* Country */}
-            <div>
-                <label className="flex justify-start text-sm font-medium text-[#0A84FF] mb-1">Country</label>
-                <select  className="w-full p-3 border border-[#0A84FF] rounded-md  text-[#0A84FF]">
-                    <option>Afghanistan</option>
-                    <option>Albania</option>
-                    <option>Algeria</option>
-                    <option>Andorra</option>
-                    <option>Angola</option>
-                    <option>Antigua and Barbuda</option>
-                    <option>Argentina</option>
-                    <option>Armenia</option>
-                    <option>Australia</option>
-                    <option>Austria</option>
-                    <option>Azerbaijan</option>
-                    <option>Bahamas</option>
-                    <option>Bahrain</option>
-                    <option>Bangladesh</option>
-                    <option>Barbados</option>
-                    <option>Belarus</option>
-                    <option>Belgium</option>
-                    <option>Belize</option>
-                    <option>Benin</option>
-                    <option>Bhutan</option>
-                    <option>Bolivia</option>
-                    <option>Bosnia and Herzegovina</option>
-                    <option>Botswana</option>
-                    <option>Brazil</option>
-                    <option>Brunei</option>
-                    <option>Bulgaria</option>
-                    <option>Burkina Faso</option>
-                    <option>Burundi</option>
-                    <option>Cabo Verde</option>
-                    <option>Cambodia</option>
-                    <option>Cameroon</option>
-                    <option>Canada</option>
-                    <option>Central African Republic</option>
-                    <option>Chad</option>
-                    <option>Chile</option>
-                    <option>China</option>
-                    <option>Colombia</option>
-                    <option>Comoros</option>
-                    <option>Congo (Brazzaville)</option>
-                    <option>Congo (Kinshasa)</option>
-                    <option>Costa Rica</option>
-                    <option>Croatia</option>
-                    <option>Cuba</option>
-                    <option>Cyprus</option>
-                    <option>Czech Republic</option>
-                    <option>Denmark</option>
-                    <option>Djibouti</option>
-                    <option>Dominica</option>
-                    <option>Dominican Republic</option>
-                    <option>Ecuador</option>
-                    <option>Egypt</option>
-                    <option>El Salvador</option>
-                    <option>Equatorial Guinea</option>
-                    <option>Eritrea</option>
-                    <option>Estonia</option>
-                    <option>Eswatini</option>
-                    <option>Ethiopia</option>
-                    <option>Fiji</option>
-                    <option>Finland</option>
-                    <option>France</option>
-                    <option>Gabon</option>
-                    <option>Gambia</option>
-                    <option>Georgia</option>
-                    <option>Germany</option>
-                    <option>Ghana</option>
-                    <option>Greece</option>
-                    <option>Grenada</option>
-                    <option>Guatemala</option>
-                    <option>Guinea</option>
-                    <option>Guinea-Bissau</option>
-                    <option>Guyana</option>
-                    <option>Haiti</option>
-                    <option>Honduras</option>
-                    <option>Hungary</option>
-                    <option>Iceland</option>
-                    <option>India</option>
-                    <option>Indonesia</option>
-                    <option>Iran</option>
-                    <option>Iraq</option>
-                    <option>Ireland</option>
-                    <option>Israel</option>
-                    <option>Italy</option>
-                    <option>Jamaica</option>
-                    <option>Japan</option>
-                    <option>Jordan</option>
-                    <option>Kazakhstan</option>
-                    <option>Kenya</option>
-                    <option>Kiribati</option>
-                    <option>Kuwait</option>
-                    <option>Kyrgyzstan</option>
-                    <option>Laos</option>
-                    <option>Latvia</option>
-                    <option>Lebanon</option>
-                    <option>Lesotho</option>
-                    <option>Liberia</option>
-                    <option>Libya</option>
-                    <option>Liechtenstein</option>
-                    <option>Lithuania</option>
-                    <option>Luxembourg</option>
-                    <option>Madagascar</option>
-                    <option>Malawi</option>
-                    <option>Malaysia</option>
-                    <option>Maldives</option>
-                    <option>Mali</option>
-                    <option>Malta</option>
-                    <option>Marshall Islands</option>
-                    <option>Mauritania</option>
-                    <option>Mauritius</option>
-                    <option>Mexico</option>
-                    <option>Micronesia</option>
-                    <option>Moldova</option>
-                    <option>Monaco</option>
-                    <option>Mongolia</option>
-                    <option>Montenegro</option>
-                    <option>Morocco</option>
-                    <option>Mozambique</option>
-                    <option>Myanmar</option>
-                    <option>Namibia</option>
-                    <option>Nauru</option>
-                    <option>Nepal</option>
-                    <option>Netherlands</option>
-                    <option>New Zealand</option>
-                    <option>Nicaragua</option>
-                    <option>Niger</option>
-                    <option>Nigeria</option>
-                    <option>North Korea</option>
-                    <option>North Macedonia</option>
-                    <option>Norway</option>
-                    <option>Oman</option>
-                    <option>Pakistan</option>
-                    <option>Palau</option>
-                    <option>Palestine</option>
-                    <option>Panama</option>
-                    <option>Papua New Guinea</option>
-                    <option>Paraguay</option>
-                    <option>Peru</option>
-                    <option>Philippines</option>
-                    <option>Poland</option>
-                    <option>Portugal</option>
-                    <option>Qatar</option>
-                    <option>Romania</option>
-                    <option>Russia</option>
-                    <option>Rwanda</option>
-                    <option>Saint Kitts and Nevis</option>
-                    <option>Saint Lucia</option>
-                    <option>Saint Vincent and the Grenadines</option>
-                    <option>Samoa</option>
-                    <option>San Marino</option>
-                    <option>Sao Tome and Principe</option>
-                    <option>Saudi Arabia</option>
-                    <option>Senegal</option>
-                    <option>Serbia</option>
-                    <option>Seychelles</option>
-                    <option>Sierra Leone</option>
-                    <option>Singapore</option>
-                    <option>Slovakia</option>
-                    <option>Slovenia</option>
-                    <option>Solomon Islands</option>
-                    <option>Somalia</option>
-                    <option>South Africa</option>
-                    <option>South Korea</option>
-                    <option>South Sudan</option>
-                    <option>Spain</option>
-                    <option>Sri Lanka</option>
-                    <option>Sudan</option>
-                    <option>Suriname</option>
-                    <option>Sweden</option>
-                    <option>Switzerland</option>
-                    <option>Syria</option>
-                    <option>Taiwan</option>
-                    <option>Tajikistan</option>
-                    <option>Tanzania</option>
-                    <option>Thailand</option>
-                    <option>Timor-Leste</option>
-                    <option>Togo</option>
-                    <option>Tonga</option>
-                    <option>Trinidad and Tobago</option>
-                    <option>Tunisia</option>
-                    <option>Turkey</option>
-                    <option>Turkmenistan</option>
-                    <option>Tuvalu</option>
-                    <option>Uganda</option>
-                    <option>Ukraine</option>
-                    <option>United Arab Emirates</option>
-                    <option>United Kingdom</option>
-                    <option>United States</option>
-                    <option>Uruguay</option>
-                    <option>Uzbekistan</option>
-                    <option>Vanuatu</option>
-                    <option>Vatican City</option>
-                    <option>Venezuela</option>
-                    <option>Vietnam</option>
-                    <option>Yemen</option>
-                    <option>Zambia</option>
-                    <option>Zimbabwe</option>
-                </select>
-            </div>
+            <SelectField
+            label="Country"
+            value={country}
+            onChange={setCountry}
+            options={COUNTRIES}
+            />
 
             <div className="flex justify-start space-x-2 text-sm text-[#0A84FF]">
                 <input 
