@@ -1,89 +1,79 @@
-import { useEffect, useRef, useState } from "react";
+// src/components/SmartImage.jsx
+import { useEffect } from "react";
 
+/* Absolutiza rutas relativas (igual que en GenreCard) */
+const toAbs = (
+  p,
+  base =
+    import.meta.env.VITE_MEDIA_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:4000/api"
+) =>
+  !p ? "" : /^https?:\/\//i.test(p) ? p : (() => { try { return new URL(p, base).href; } catch { return p; } })();
+
+/* Aplica transformaciones Cloudinary solo si la URL contiene /upload/ */
+const withCloudinaryTransforms = (url, t) =>
+  url && url.includes("/upload/") ? url.replace("/upload/", `/upload/${t}/`) : url || "";
+
+/**
+ * SmartImage optimizada para carrusel:
+ * - c_limit (NO recorta; escala por ancho)
+ * - dpr_1 + f_auto para URL estable y ligera
+ * - q_auto:good si priority, si no eco
+ * - srcSet con varios anchos para que el navegador elija el mínimo válido
+ * - Reserva espacio con `ratio` o width/height → sin saltos de layout
+ */
 export default function SmartImage({
   src,
   alt = "",
+  // reserva de espacio
   width,
   height,
-  ratio = "1 / 1",
-  placeholder = "",
+  ratio = "16 / 9",
+  // prioridad (primeras slides): eager + preload
+  priority = false,
+  // anchos disponibles (ajusta a tu layout real)
+  widths = [480, 720, 960, 1280],
+  sizes = "(min-width: 1024px) 720px, 92vw",
   className = "",
   rounded = "rounded-xl",
+  style,
 }) {
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
-  const imgRef = useRef(null);
+  const abs = toAbs(src);
+  const quality = priority ? "good" : "eco";
+  const make = (w) => withCloudinaryTransforms(abs, `c_limit,w_${w},f_auto,q_auto:${quality},dpr_1`);
+  const srcSet = widths.map((w) => `${make(w)} ${w}w`).join(", ");
+  // Por defecto usamos un ancho medio para arrancar
+  const defaultW = widths[Math.min(1, widths.length - 1)] || widths[0]; // 720 si existe, si no el primero
+  const defaultSrc = make(defaultW);
 
+  // Preload de la imagen prioritaria para ganar ~300–600ms en primera vista
   useEffect(() => {
-    if (!src) return;
-    let cancelled = false;
+    if (!priority) return;
+    const l = document.createElement("link");
+    l.rel = "preload";
+    l.as = "image";
+    l.href = defaultSrc;
+    l.crossOrigin = "anonymous";
+    document.head.appendChild(l);
+    return () => document.head.removeChild(l);
+  }, [priority, defaultSrc]);
 
-    const img = new Image();
-    img.src = src;
-    img.decoding = "async";
-    img.onload = async () => {
-      try {
-        // Garantiza que esté decodificada antes de pintar
-        if (img.decode) await img.decode();
-      } catch {/* safari a veces lanza */}
-      if (!cancelled) setLoaded(true);
-    };
-    img.onerror = () => {
-      if (!cancelled) setErrored(true);
-    };
-
-    return () => { cancelled = true; };
-  }, [src]);
-
-  // Contenedor: reserva espacio para evitar saltos de layout
-  const styleBox = width && height
-    ? { width, height }
-    : { aspectRatio: ratio };
+  const boxStyle = width && height ? { width, height, ...style } : { aspectRatio: ratio, ...style };
 
   return (
-    <div
-      className={`relative overflow-hidden ${rounded} bg-white/5`}
-      style={styleBox}
-    >
-      {/* Skeleton / Blur-up */}
-      <div
-        className={`absolute inset-0 transition-opacity duration-300 ${
-          loaded ? "opacity-0" : "opacity-100"
-        }`}
-        aria-hidden="true"
-      >
-        {placeholder ? (
-          <img
-            src={placeholder}
-            alt=""
-            className={`w-full h-full object-cover blur-md scale-105 ${rounded}`}
-            loading="eager"
-          />
-        ) : (
-          <div className="w-full h-full animate-pulse bg-gradient-to-br from-neutral-800 to-neutral-700" />
-        )}
-      </div>
-
-      {/* Final */}
-      {!errored && (
-        <img
-          ref={imgRef}
-          src={src}
-          alt={alt}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-            loaded ? "opacity-100" : "opacity-0"
-          } ${className} ${rounded}`}
-          draggable={false}
-          loading="lazy"
-        />
-      )}
-
-      {/* Fallback si falla */}
-      {errored && (
-        <div className="absolute inset-0 flex items-center justify-center text-neutral-400 text-xs">
-          no cover
-        </div>
-      )}
+    <div className={`relative overflow-hidden ${rounded} bg-white/5 ${className}`} style={boxStyle}>
+      <img
+        src={defaultSrc}
+        srcSet={srcSet}
+        sizes={sizes}
+        alt={alt}
+        loading={priority ? "eager" : "lazy"}
+        fetchpriority={priority ? "high" : "auto"}
+        decoding="async"
+        draggable={false}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
     </div>
   );
 }

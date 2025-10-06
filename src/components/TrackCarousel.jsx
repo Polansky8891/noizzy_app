@@ -1,7 +1,8 @@
 import { usePlayer } from "./PlayerContext";
-import { useFeelTracks } from "../hooks/useFeelTracks";
+import SmartImage from "./SmartImage";                 // 👈 imagen optimizada (carruseles)
+import { useCachedTracks } from "../hooks/useCachedTracks"; // 👈 cache SWR con Cache Storage
 
-function TrackCard({ t, onPlay }) {
+function TrackCard({ t, onPlay, priority }) {
   return (
     <div className="w-30 shrink-0 rounded-xl bg-[#1C1C1C] p-2 border border-transparent hover:border-[#0A84FF] transition">
       <div
@@ -12,12 +13,31 @@ function TrackCard({ t, onPlay }) {
         tabIndex={0}
         title={t.title}
       >
-        <img src={t.coverUrl} alt={t.title} className="w-full h-full object-cover" />
+        <SmartImage
+          src={t.coverUrl || t.cover || t.image}
+          alt={t.title}
+          ratio="1 / 1"
+          widths={[160, 240, 320, 480]}
+          sizes="160px"
+          rounded="rounded-lg"
+          className="bg-[#111]"
+          priority={priority} // 🔥 das prioridad a las 2 primeras
+        />
       </div>
       <div className="mt-2">
         <p className="text-sm text-[#0A84FF] truncate">{t.title}</p>
         <p className="text-xs text-[#0A84FF] truncate">{t.artist}</p>
       </div>
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="w-30 shrink-0 rounded-xl bg-[#1C1C1C] p-2">
+      <div className="aspect-square rounded-lg bg-white/10" />
+      <div className="mt-2 h-4 rounded bg-white/10" />
+      <div className="mt-1 h-3 w-2/3 rounded bg-white/10" />
     </div>
   );
 }
@@ -29,27 +49,37 @@ export default function TrackCarousel({
   emptyText = "No hay temas disponibles.",
 }) {
   const { playTrack } = usePlayer();
-  const { items, loading, error } = useFeelTracks(feel, { limit });
+
+  // 👇 Cache Storage (SWR): pinta cache al instante, revalida en background
+  const { items, loading } = useCachedTracks({ feel, limit });
 
   return (
     <section className="mt-8">
-      {title && <h2 className="text-2xl font-exo font-light text-[#0A84FF] mb-3">{title}</h2>}
-
-      {loading && <p className="text-gray-400">Cargando…</p>}
-      {error && <p className="text-red-400">{error}</p>}
-
-      {!loading && !error && items.length > 0 && (
-        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
-          <style>{`.overflow-x-auto::-webkit-scrollbar{display:none}`}</style>
-          {items.map((t) => (
-            <div key={t._id} className="snap-start">
-              <TrackCard t={t} onPlay={playTrack} />
-            </div>
-          ))}
-        </div>
+      {title && (
+        <h2 className="text-2xl font-exo font-light text-[#0A84FF] mb-3">
+          {title}
+        </h2>
       )}
 
-      {!loading && !error && items.length === 0 && (
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
+        <style>{`.overflow-x-auto::-webkit-scrollbar{display:none}`}</style>
+
+        {(loading && items.length === 0 ? Array.from({ length: 10 }) : items).map((t, i) => (
+          <div key={(t && (t._id || t.id)) ?? i} className="snap-start">
+            {loading && items.length === 0 ? (
+              <SkeletonCard />
+            ) : (
+              <TrackCard
+                t={t}
+                onPlay={playTrack}   // ✅ igual que tenías (no rompemos tu Player)
+                priority={i < 2}     // ✅ primeras dos imágenes con prioridad real
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {!loading && items.length === 0 && (
         <p className="text-gray-400">{emptyText}</p>
       )}
     </section>
