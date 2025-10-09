@@ -1,11 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../api/axios";
+import { logout } from "./auth/authSlice";
 
 const initialState = {
-    ids: [],
-    items: [],
-    loading: false,
-    error: null
+  ids: [],
+  items: [],
+  loading: false,
+  error: null,
+  hasFetchedOnce: false, // ✅ NUEVO
 };
 
 export const fetchFavoriteTracks = createAsyncThunk(
@@ -14,7 +16,6 @@ export const fetchFavoriteTracks = createAsyncThunk(
     try {
       const res = await api.get("/me/favorites", {
         signal,
-        // 2xx o 204 son ok
         validateStatus: (s) => (s >= 200 && s < 300) || s === 204,
       });
 
@@ -34,11 +35,9 @@ export const fetchFavoriteTracks = createAsyncThunk(
       }
       return { items: [], ids: [] };
     } catch (err) {
-      // cancelación
       if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
         return rejectWithValue("canceled");
       }
-      // si llegó aquí tras el retry del interceptor y sigue siendo 401, probablemente sesión inválida/revocada
       if (err?.response?.status === 401) {
         return rejectWithValue("unauthorized");
       }
@@ -105,6 +104,7 @@ const favoritesSlice = createSlice({
       state.items = [];
       state.error = null;
       state.loading = false;
+      state.hasFetchedOnce = false; // ✅ reset
     },
   },
   extraReducers: (builder) => {
@@ -112,15 +112,21 @@ const favoritesSlice = createSlice({
       .addCase(fetchFavoriteTracks.pending, (s) => {
         s.loading = true;
         s.error = null;
+        // ❗️No vaciamos items/ids en pending para evitar “flash”
       })
       .addCase(fetchFavoriteTracks.fulfilled, (s, a) => {
         s.loading = false;
         s.items = a.payload.items || [];
         s.ids = a.payload.ids || [];
+        s.hasFetchedOnce = true; // ✅ ya hicimos la 1ª carga
       })
       .addCase(fetchFavoriteTracks.rejected, (s, a) => {
         s.loading = false;
         s.error = a.payload === "canceled" ? null : a.payload || "Error";
+        // ✅ si fue cancelado no marcamos hasFetchedOnce (permitimos reintento)
+        if (a.payload !== "canceled") {
+          s.hasFetchedOnce = true;
+        }
       })
       .addCase(addFavorite.fulfilled, (s, a) => {
         if (Array.isArray(a.payload?.ids)) s.ids = a.payload.ids;
@@ -140,6 +146,13 @@ const favoritesSlice = createSlice({
           s.ids = s.ids.filter((x) => x !== id);
           s.items = s.items.filter((t) => String(t._id || t.id) !== id);
         }
+      })
+      .addCase(logout, (s) => {
+        s.ids = [];
+        s.items = [];
+        s.error = null;
+        s.loading = false;
+        s.hasFetchedOnce = false;
       });
   },
 });
@@ -149,3 +162,4 @@ export default favoritesSlice.reducer;
 
 export const selectFavoriteTracks = (s) => s.favorites.items;
 export const selectFavoritesLoading = (s) => s.favorites.loading;
+export const selectFavoritesHasFetchedOnce = (s) => s.favorites.hasFetchedOnce;

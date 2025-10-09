@@ -27,6 +27,7 @@ export const Favorites = () => {
   const tracks = useSelector(selectFavoriteTracks);
   const loading = useSelector(selectFavoritesLoading);
   const { onPlay } = usePlayer();
+  const hasFetchedOnce = useSelector((s) => s.favorites?.hasFetchedOnce);
 
   // Mantener últimas filas buenas para evitar flashes en recargas
   const lastGoodRowsRef = useRef([]);
@@ -41,13 +42,22 @@ export const Favorites = () => {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try { await dispatch(fetchFavoriteTracks()); }
-      finally { if (mounted) setFirstFetchDone(true); }
+      if (!hasFetchedOnce) {
+        try {
+          await dispatch(fetchFavoriteTracks());
+        } finally {
+          if (mounted) setFirstFetchDone(true);
+        }
+      } else {
+        if (mounted) setFirstFetchDone(true);
+      }
     })();
-    return () => { mounted = false; };
-  }, [dispatch]);
+    return () => {
+      mounted = false;
+    };
+  }, [dispatch, hasFetchedOnce]);
 
-  // Filas a mostrar: nuevas -> últimas buenas -> []
+  // ✅ DEFINIMOS rows (faltaba)
   const rows = useMemo(() => {
     if (Array.isArray(tracks) && tracks.length > 0) return tracks;
     if (lastGoodRowsRef.current?.length > 0) return lastGoodRowsRef.current;
@@ -55,8 +65,8 @@ export const Favorites = () => {
   }, [tracks]);
 
   // Mostrar tabla si hay filas o si está cargando; empty sólo cuando sabemos seguro que está vacío
-  const showTable = rows.length > 0 || loading;
-  const showEmpty = !loading && firstFetchDone && rows.length === 0;
+  const showTable = rows.length > 0;
+  const showEmpty = firstFetchDone && !loading && rows.length === 0;
 
   // Estilos DataTable (tema oscuro + azul)
   const customStyles = {
@@ -174,32 +184,34 @@ export const Favorites = () => {
         </div>
 
         <div className="p-2 sm:p-4">
-          {showTable && (
-            <DataTable
-              columns={columns}
-              data={rows}
-              onRowClicked={handleRowClick}
-              pointerOnHover
-              highlightOnHover
-              dense
-              persistTableHead
-              customStyles={customStyles}
-              noDataComponent={null}
-              progressPending={false}
-              keyField="_id"
-            />
-          )}
+          <div className={`min-h-[240px] transition-opacity duration-200 ${showTable ? "opacity-100" : "opacity-0"}`}>
+            {showTable && (
+              <DataTable
+                columns={columns}
+                data={rows}
+                onRowClicked={handleRowClick}
+                pointerOnHover
+                highlightOnHover
+                dense
+                persistTableHead
+                customStyles={customStyles}
+                noDataComponent={null}
+                progressPending={false}
+                keyField="_id"
+              />
+            )}
 
-          {showEmpty && (
-            <div className="py-12 text-center">
-              <p className="text-gray-300">
-                You haven&apos;t added any songs to your favourites yet.
-              </p>
-            </div>
-          )}
+            {showEmpty && (
+              <div className="py-12 text-center">
+                <p className="text-gray-300">
+                  You haven&apos;t added any songs to your favourites yet.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </div>   
   );
 };
 
