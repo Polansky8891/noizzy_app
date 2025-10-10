@@ -1,6 +1,6 @@
 import { SideBarButton } from "./SideBarButton";
 import { HiHome } from "react-icons/hi2";
-import { MdLibraryMusic, MdFavoriteBorder } from "react-icons/md";
+import { MdFavoriteBorder } from "react-icons/md";
 import { BsGraphUp } from "react-icons/bs";
 import { SettingsMenu } from "./SettingsMenu";
 import { useRef, useState, useEffect } from "react";
