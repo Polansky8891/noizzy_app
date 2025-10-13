@@ -32,8 +32,7 @@ import { HipHop } from "./pages/HipHop";
 import { Reggae } from "./pages/Reggae";
 import { House } from "./pages/House";
 import { Jazz } from "./pages/Jazz";
-
-import { FaBars } from "react-icons/fa";
+import AuthGate from "./components/AuthGate";
 
 
 export default function App() {
@@ -55,22 +54,21 @@ export default function App() {
       <AuthListener />
 
       <div className="min-h-dvh bg-black text-white overflow-x-hidden">
-        {/* Header con hamburger (móvil) */}
+        {/* Header móvil */}
         <MobileHeader onToggle={() => setMobileNavOpen(v => !v)} />
-        {/* Barra horizontal oculta/visible según el hamburger */}
         <MobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-        <div className="flex">
-          {/* Sidebar fija en desktop */}
-          <aside className="hidden lg:block w-60 shrink-0 h-dvh sticky top-0">
-            <SideBar />
-          </aside>
+        {/* ✅ Sidebar fija en desktop (fuera del flujo) */}
+        <aside className="hidden lg:block fixed inset-y-0 left-0 w-60 z-40">
+          <SideBar />
+        </aside>
 
-          {/* Contenido principal (reserva altura del player) */}
+        {/* ✅ Contenido desplazado a la derecha de la sidebar fija */}
+        <div className="lg:ml-60">
           <main
-            className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-4"
+            className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-4 lg:h-dvh lg:overflow-y-auto"
             style={{ paddingBottom: `calc(${playerH}px + env(safe-area-inset-bottom))` }}
-            onClick={() => setMobileNavOpen(false)} // cerrar si tocas el contenido
+            onClick={() => setMobileNavOpen(false)}
           >
             <Routes>
               <Route path="/" element={<Home />} />
@@ -108,10 +106,11 @@ export default function App() {
           </main>
         </div>
 
-        {/* Player fijo abajo (sin altura forzada, ya lo medimos) */}
-        <div ref={playerRef} className="fixed bottom-0 inset-x-0 z-30">
+        {/* Player fijo abajo */}
+        <div ref={playerRef} className="fixed bottom-0 inset-x-0 z-50">
           <MusicPlayer />
         </div>
+        <AuthGate />
       </div>
     </BrowserRouter>
   );

@@ -1,9 +1,11 @@
 // src/auth/AuthListener.jsx
-import { useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
-import { onAuthStateChanged, onIdTokenChanged } from 'firebase/auth';
-import { FirebaseAuth } from '../../firebase/config';
-import { login, logout, setToken, checkingCredentials } from './authSlice';
+import { useEffect, useRef } from "react";
+import { useDispatch } from "react-redux";
+import { onAuthStateChanged, onIdTokenChanged } from "firebase/auth";
+import { FirebaseAuth } from "../../firebase/config";
+import { login, logout, setToken, checkingCredentials } from "./authSlice";
+// (opcional) si usas axios global
+// import api from "../../api/axios";
 
 export default function AuthListener() {
   const dispatch = useDispatch();
@@ -12,20 +14,29 @@ export default function AuthListener() {
   useEffect(() => {
     mountedRef.current = true;
 
-    // 1) Entra/sale usuario
+    // 0) Arrancamos en "checking" para evitar parpadeos no-autenticados
+    dispatch(checkingCredentials());
+
+    // 1) Escucha principal de sesión
     const unsubAuth = onAuthStateChanged(FirebaseAuth, async (user) => {
       if (!mountedRef.current) return;
 
       if (!user) {
+        // Sin usuario -> estado NO autenticado + limpiar token
         dispatch(setToken(null));
         dispatch(logout());
+        // if (api?.defaults?.headers?.common) delete api.defaults.headers.common.Authorization;
         return;
       }
 
-      // Cargamos un token inicial (no forzamos refresh)
-      let t = null;
-      try { t = await user.getIdToken(false); } catch { t = null; }
-      dispatch(setToken(t));
+      // Con usuario -> obtenemos token inicial y cargamos datos
+      try {
+        const t = await user.getIdToken(false);
+        dispatch(setToken(t));
+      } catch {
+        dispatch(setToken(null));
+      }
+
       dispatch(
         login({
           uid: user.uid,
@@ -36,12 +47,17 @@ export default function AuthListener() {
       );
     });
 
-    // 2) Cuando Firebase rote el token, lo actualizamos en el store
+    // 2) Rotación de token: mantener store sincronizado
     const unsubTok = onIdTokenChanged(FirebaseAuth, async (user) => {
       if (!mountedRef.current) return;
-      let t = null;
-      try { t = user ? await user.getIdToken(false) : null; } catch { t = null; }
-      dispatch(setToken(t));
+      try {
+        const t = user ? await user.getIdToken(false) : null;
+        dispatch(setToken(t));
+        // if (t && api?.defaults?.headers?.common) api.defaults.headers.common.Authorization = `Bearer ${t}`;
+        // else if (api?.defaults?.headers?.common) delete api.defaults.headers.common.Authorization;
+      } catch {
+        dispatch(setToken(null));
+      }
     });
 
     return () => {

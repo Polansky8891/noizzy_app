@@ -60,6 +60,8 @@ function ChillCard({ t, onPlay }) {
   );
 }
 
+console.log("helloooooo");
+
 export const Home = () => {
   const genres = [
     { name: 'Rock', img: rockImg, slug: 'rock' },
@@ -105,7 +107,7 @@ export const Home = () => {
   }, []);
 
   return (
-    <div className="w-full h-full bg-black rounded-3xl">
+    <div className="w-full min-h-0 bg-black rounded-3xl space-y-8 pb-6">
       {/* Top genres */}
       <h2 className="text-3xl font-exo font-light text-[#0A84FF] mb-5">Top genres</h2>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6">

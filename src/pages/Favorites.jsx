@@ -135,8 +135,8 @@ useEffect(() => {
     sortable: true,
     cell: (r) => (
       <div className="flex flex-col min-w-0 pr-2">
-        <span className="font-semibold text-gray-100 truncate">{r.title}</span>
-        <span className="text-sm text-gray-400 truncate">{r.artist}</span>
+        <span className="font-semibold text-[#0A84FF] truncate">{r.title}</span>
+        <span className="text-sm text-[#0A84FF] truncate">{r.artist}</span>
       </div>
     ),
   },
@@ -152,7 +152,7 @@ useEffect(() => {
         onClick={(e) => { e.stopPropagation(); handleRemove(r._id || r.id); }}
         title="Remove from favorites"
       >
-        <FiTrash2 />
+        <FiTrash2 className="text-[#0A84FF]" />
       </button>
     ),
     ignoreRowClick: true,
@@ -166,7 +166,7 @@ useEffect(() => {
     <div className="min-h-[60vh] p-4 sm:p-6">
       <div className="bg-[#0F0F0F] border border-[#0A84FF]/60 rounded-2xl shadow-[0_0_20px_rgba(10,132,255,0.08)] overflow-hidden">
         <div className="px-4 py-3 border-b border-[#0A84FF]/30">
-          <h2 className="text-lg font-semibold text-[#E0FFFF]">Your Favorites</h2>
+          <h2 className="text-lg font-semibold text-[#0A84FF]">Your Favorites</h2>
         </div>
 
         <div className="p-2 sm:p-4">
@@ -180,6 +180,7 @@ useEffect(() => {
                 highlightOnHover
                 dense
                 persistTableHead
+                noTableHead
                 customStyles={customStyles}
                 noDataComponent={null}
                 progressPending={false}

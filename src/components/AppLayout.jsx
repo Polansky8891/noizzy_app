@@ -1,59 +1,45 @@
-// src/layout/AppLayout.jsx
-import { useState, useEffect, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
 import { Header } from "./Header";
 import { SideBar } from "./SideBar";
-
-// 🔹 importa tu selector de auth y la thunk de favoritos
-import { selectAuth } from "../store/auth/authSlice";
-import { fetchFavoriteTracks } from "../store/favoritesSlice";
+import AuthGate from "./AuthGate";
 
 export default function AppLayout({ children, player }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // 🔹 prefetch de favoritos cuando el usuario está logueado
-  const dispatch = useDispatch();
-  const { status } = useSelector(selectAuth);
-  const hasFetchedOnce = useSelector((s) => s.favorites?.hasFetchedOnce);
-  const isFetchingFavs = useSelector((s) => s.favorites?.loading);
-
-  // evita dobles llamadas en modo Strict de React (dev)
-  const didPrefetchRef = useRef(false);
-
-  useEffect(() => {
-    if (
-      status === "authenticated" &&
-      !hasFetchedOnce &&
-      !isFetchingFavs &&
-      !didPrefetchRef.current
-    ) {
-      didPrefetchRef.current = true;
-      dispatch(fetchFavoriteTracks());
-    }
-  }, [status, hasFetchedOnce, isFetchingFavs, dispatch]);
-
   return (
-    <div className="min-h-dvh bg-black text-white">
-      <div className="lg:hidden">
-        <Header onOpenSideBar={() => setSidebarOpen(true)} />
-      </div>
+    // min-h-0 es CLAVE para permitir que el <main> hijo pueda scrollear
+    <div className="bg-black text-white min-h-dvh lg:grid lg:grid-cols-[15rem,1fr] lg:grid-rows-[auto,1fr,auto]">
+      {/* Sidebar desktop (col 1, toda la altura de la grid) */}
+      <aside className="hidden lg:block lg:row-[1/4] lg:col-[1] border-r border-neutral-800 min-h-0">
+        <SideBar />
+      </aside>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[240px,1fr]">
-        <aside className="hidden lg:block lg:h-dvh lg:sticky lg:top-0">
-          <SideBar />
-        </aside>
+      {/* Header (mobile y desktop) */}
+      <header className="lg:col-[2] lg:row-[1]">
+        <div className="lg:hidden">
+          <Header onOpenSideBar={() => setSidebarOpen(true)} />
+        </div>
+        <div className="hidden lg:block">
+          {/* Si no quieres header en desktop, quita este bloque */}
+          <Header onOpenSideBar={() => {}} />
+        </div>
+      </header>
 
-        <main className="min-h-[calc(100dvh-96px)] px-3 sm:px-6 lg:px-8 py-4">
-          {children}
-        </main>
-      </div>
+      {/* Contenido scrolleable (SU PROPIA FILA) */}
+      <main className="lg:col-[2] lg:row-[2] overflow-y-auto min-h-0 px-3 sm:px-6 lg:px-8 py-4">
+        {children}
+      </main>
 
+      {/* Player ocupa su fila propia, NO es fixed */}
+      <footer className="lg:col-[2] lg:row-[3] border-t border-neutral-800">
+        {player}
+      </footer>
+
+
+      {/* Drawer móvil */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-40">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setSidebarOpen(false)}
-          />
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-72 bg-[#111] shadow-xl p-4">
             <button
               className="mb-2 inline-flex items-center gap-2 text-sm text-gray-300"
@@ -61,12 +47,20 @@ export default function AppLayout({ children, player }) {
             >
               <span>x</span> Close
             </button>
-            <SideBar onNavigate={() => setSidebarOpen(false)} />
+            <SideBar onNavigate={() => setSidebarOpen(false)} compact />
           </div>
         </div>
       )}
-
-      <div className="fixed bottom-0 inset-x-0 z-30">{player}</div>
+      <AuthGate />
+      {/* TEST 1: overlay bruto, debe verse sí o sí */}
+<div
+  id="overlay-test-1"
+  className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-md flex items-center justify-center"
+>
+  <div className="px-4 py-2 rounded-lg bg-[#0F0F0F] border border-[#0A84FF]/40 text-[#0A84FF]">
+    TEST 1 — overlay bruto
+  </div>
+</div>
     </div>
   );
 }
