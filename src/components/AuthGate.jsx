@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { selectAuth, selectIdToken } from "../store/auth/authSlice";
+import { selectAuth, selectIdToken, selectHydrated } from "../store/auth/authSlice";
 import { FirebaseAuth } from "../firebase/config";
 
 
@@ -18,8 +18,11 @@ export default function AuthGate() {
   const AUTH_ROUTES = ["/login", "/profile"]; // ← tus rutas de auth
   const isAuthRoute = AUTH_ROUTES.some((p) => location.pathname.startsWith(p));
 
+  const hydrated = useSelector(selectHydrated);
+  const show = hydrated && !isFullyAuthed && !isAuthRoute;
+
   // Mostrar overlay SOLO si no hay sesión y NO estamos ya en /login o /profile
-  const show = !isFullyAuthed && !isAuthRoute;
+  
 
   // Bloquear scroll mientras esté visible
   useEffect(() => {

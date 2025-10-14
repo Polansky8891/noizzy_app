@@ -8,6 +8,7 @@ const initialState = {
     photoURL: null,
     token: null,
     errorMessage: null,
+    hydrated: false,
 }
 
 export const authSlice = createSlice({
@@ -29,18 +30,23 @@ export const authSlice = createSlice({
             ...initialState,
             status: 'not-authenticated',
             token: null,
+            hydrated: true,
         }),
         checkingCredentials: (state) => {
             state.status = 'checking';
             state.errorMessage = undefined;
-        }
+        },
+        setHydrated: (state, { payload }) => {
+            state.hydrated = !!payload;
+        },
 
-    }
+    },
 });
 
-export const { setToken,login, logout, checkingCredentials } = authSlice.actions;
+export const { setToken,login, logout, checkingCredentials, setHydrated } = authSlice.actions;
 export default authSlice.reducer;
 
 export const selectIsAuthenticated = (s) => s.auth.status === 'authenticated';
 export const selectAuth = (s) => s.auth;
 export const selectIdToken = (s) => s.auth.token;
+export const selectHydrated = (s) => s.auth.hydrated === true;

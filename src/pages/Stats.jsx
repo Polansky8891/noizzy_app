@@ -5,8 +5,6 @@ import Kpi from "../components/Kpi";
 import { selectAuth } from "../store/auth/authSlice";
 import { useSelector } from "react-redux";
 
-
-
 const emptySummary = {
   days: 0,
   minutes: 0,
@@ -26,20 +24,20 @@ export const Stats = () => {
 
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ empieza en false
+  const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Pinta al instante si hay cache en memoria (navegaciones dentro de la sesión)
+  // Pintar al instante si hay cache en memoria (navegación dentro de sesión)
   useEffect(() => {
     if (lastStatsCache) setData(lastStatsCache);
   }, []);
 
   useEffect(() => {
-  if (status !== "authenticated") {
-    lastStatsCache = null;
-    setData(null);
-  }
-}, [status]);
+    if (status !== "authenticated") {
+      lastStatsCache = null;
+      setData(null);
+    }
+  }, [status]);
 
   const fetchStats = useCallback(async () => {
     if (!token) return;
@@ -78,7 +76,8 @@ export const Stats = () => {
         err?.name === "CanceledError" ||
         err?.name === "AbortError" ||
         msg === "canceled"
-      ) return;
+      )
+        return;
 
       if (err?.response?.status === 401) setError("No autorizado. Inicia sesión de nuevo.");
       else setError(err?.message || "Error al cargar estadísticas");
@@ -88,7 +87,7 @@ export const Stats = () => {
     }
   }, [token]);
 
-  // ✅ Dispara solo si estás autenticado y hay token
+  // Dispara solo si estás autenticado y hay token
   useEffect(() => {
     if (status === "authenticated" && token && (!data || reloadKey)) {
       fetchStats();
@@ -102,6 +101,9 @@ export const Stats = () => {
       minutes: Math.round((item?.ms ?? 0) / 60000),
     }));
   }, [data]);
+
+  // Mantén una referencia estable para el chart
+  const chartData = useMemo(() => dailyMinutes, [dailyMinutes]);
 
   // No mostramos textos de carga/login; solo pintamos cuando hay datos + auth
   const ready = Boolean(data) && status === "authenticated";
@@ -126,9 +128,7 @@ export const Stats = () => {
 
   return (
     <div className={`p-6 space-y-6 transition-opacity duration-200 ${loading ? "opacity-90" : "opacity-100"}`}>
-      <h1 className="text-xl font-semibold text-[#0A84FF]">
-        Your stats (last 7 days)
-      </h1>
+      <h1 className="text-xl font-semibold text-[#0A84FF]">Your stats (last 7 days)</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[#0A84FF]">
         <Kpi title="Minutes" value={data.minutes} valueClassName="text-[#0A84FF]" />
@@ -137,24 +137,37 @@ export const Stats = () => {
       </div>
 
       <section className="bg-[#080808] rounded-xl p-4">
-        <h2 className="mb-3 font-medium text-[#0A84FF]">Minutes per day</h2>
-        <div style={{ width: "100%", height: 280 }}>
-          <ResponsiveContainer>
-            <BarChart data={dailyMinutes}>
-              <CartesianGrid vertical={false} stroke={AXIS} />
-              <XAxis dataKey="date" tick={{ fill: BLUE, fontSize: 12 }} axisLine={{ stroke: AXIS }} tickLine={false} />
-              <YAxis tick={{ fill: BLUE, fontSize: 12 }} axisLine={{ stroke: AXIS }} tickLine={false} />
-              <Tooltip
-                cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                contentStyle={{ background: "#0A0C0D", border: `1px solid ${AXIS}`, color: BLUE }}
-                labelStyle={{ color: BLUE }}
-                itemStyle={{ color: BLUE }}
-              />
-              <Bar dataKey="minutes" fill={BLUE} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
+  <h2 className="mb-3 font-medium text-[#0A84FF]">Minutes per day</h2>
+
+  {/* wrapper que pinta el foco azul y quita el outline naranja del hijo */}
+  <div className="rounded-xl outline-none focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#0A84FF] [&_*:focus]:outline-none" style={{ width: "100%", height: 280 }}>
+    <ResponsiveContainer debounce={180}>
+      <BarChart data={chartData}>
+        <CartesianGrid vertical={false} stroke={AXIS} />
+        <XAxis
+          dataKey="date"
+          tick={{ fill: BLUE, fontSize: 12 }}
+          axisLine={{ stroke: AXIS }}
+          tickLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          tick={{ fill: BLUE, fontSize: 12 }}
+          axisLine={{ stroke: AXIS }}
+          tickLine={false}
+          allowDecimals={false}
+        />
+        <Tooltip
+          cursor={{ fill: "rgba(255,255,255,0.04)" }}
+          contentStyle={{ background: "#0A0C0D", border: `1px solid ${AXIS}`, color: BLUE }}
+          labelStyle={{ color: BLUE }}
+          itemStyle={{ color: BLUE }}
+        />
+        <Bar dataKey="minutes" fill={BLUE} isAnimationActive={false} />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+</section>
 
       <section className="bg-white/5 rounded-xl p-4">
         <h2 className="mb-3 font-medium text-[#0A84FF]">Top genre by time</h2>

@@ -3,18 +3,19 @@ import { useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { onAuthStateChanged, onIdTokenChanged } from "firebase/auth";
 import { FirebaseAuth } from "../../firebase/config";
-import { login, logout, setToken, checkingCredentials } from "./authSlice";
+import { login, logout, setToken, checkingCredentials, setHydrated } from "./authSlice";
 // (opcional) si usas axios global
 // import api from "../../api/axios";
 
 export default function AuthListener() {
   const dispatch = useDispatch();
   const mountedRef = useRef(true);
+  const firstFiredRef = useRef(false); // ← NUEVO: sabremos cuándo Firebase respondió 1ª vez
 
   useEffect(() => {
     mountedRef.current = true;
 
-    // 0) Arrancamos en "checking" para evitar parpadeos no-autenticados
+    // Evita parpadeos: estado "checking" hasta que Firebase responda
     dispatch(checkingCredentials());
 
     // 1) Escucha principal de sesión
@@ -22,32 +23,36 @@ export default function AuthListener() {
       if (!mountedRef.current) return;
 
       if (!user) {
-        // Sin usuario -> estado NO autenticado + limpiar token
         dispatch(setToken(null));
         dispatch(logout());
         // if (api?.defaults?.headers?.common) delete api.defaults.headers.common.Authorization;
-        return;
+      } else {
+        try {
+          const t = await user.getIdToken(false);
+          dispatch(setToken(t));
+          // if (api?.defaults?.headers?.common) api.defaults.headers.common.Authorization = `Bearer ${t}`;
+        } catch {
+          dispatch(setToken(null));
+        }
+
+        dispatch(
+          login({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+          })
+        );
       }
 
-      // Con usuario -> obtenemos token inicial y cargamos datos
-      try {
-        const t = await user.getIdToken(false);
-        dispatch(setToken(t));
-      } catch {
-        dispatch(setToken(null));
+      // ← NUEVO: marcar hidratado tras la PRIMERA respuesta de Firebase
+      if (!firstFiredRef.current) {
+        firstFiredRef.current = true;
+        dispatch(setHydrated(true));
       }
-
-      dispatch(
-        login({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-        })
-      );
     });
 
-    // 2) Rotación de token: mantener store sincronizado
+    // 2) Rotación de token
     const unsubTok = onIdTokenChanged(FirebaseAuth, async (user) => {
       if (!mountedRef.current) return;
       try {
