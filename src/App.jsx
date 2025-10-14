@@ -33,21 +33,51 @@ import { Reggae } from "./pages/Reggae";
 import { House } from "./pages/House";
 import { Jazz } from "./pages/Jazz";
 import AuthGate from "./components/AuthGate";
+import { useSelector } from "react-redux";
+import { selectAuth, selectIdToken } from "./store/auth/authSlice";
+import { FirebaseAuth } from "./firebase/config";
 
 
 export default function App() {
+
+  const { status } = useSelector(selectAuth);
+  const token = useSelector(selectIdToken);
+  const fbUser = FirebaseAuth?.currentUser || null;
+  const isAuthed = !!fbUser && status === "authenticated" && !!token;
+
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const playerRef = useRef(null);
   const [playerH, setPlayerH] = useState(0);
+
   useEffect(() => {
-    const update = () => setPlayerH(playerRef.current?.offsetHeight || 0);
+    const setVar = (h) => {
+      document.documentElement.style.setProperty('--player-h', `${h}px`);
+    };
+
+    if (!isAuthed) {
+      setPlayerH(0);
+      setVar(0);
+      return;
+    }
+
+    const update = () => {
+      const h = playerRef.current?.offsetHeight || 0;
+      setPlayerH(h);
+      setVar(h)
+    };
+
     update();
+
     const ro = new ResizeObserver(update);
     if (playerRef.current) ro.observe(playerRef.current);
-    window.addEventListener("resize", update);
-    return () => { window.removeEventListener("resize", update); ro.disconnect(); };
-  }, []);
+
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      ro.disconnect();
+    };
+  }, [isAuthed]);
 
   return (
     <BrowserRouter>
@@ -106,10 +136,12 @@ export default function App() {
           </main>
         </div>
 
-        {/* Player fijo abajo */}
-        <div ref={playerRef} className="fixed bottom-0 inset-x-0 z-50">
+        {/* Player sólo si hay sesión */}
+        {isAuthed &&(
+          <div ref={playerRef} className="fixed bottom-0 inset-x-0 z-50">
           <MusicPlayer />
-        </div>
+          </div>
+        )}
         <AuthGate />
       </div>
     </BrowserRouter>
