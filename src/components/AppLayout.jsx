@@ -52,15 +52,6 @@ export default function AppLayout({ children, player }) {
         </div>
       )}
       <AuthGate />
-      {/* TEST 1: overlay bruto, debe verse sí o sí */}
-<div
-  id="overlay-test-1"
-  className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-md flex items-center justify-center"
->
-  <div className="px-4 py-2 rounded-lg bg-[#0F0F0F] border border-[#0A84FF]/40 text-[#0A84FF]">
-    TEST 1 — overlay bruto
-  </div>
-</div>
     </div>
   );
 }
