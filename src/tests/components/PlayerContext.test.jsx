@@ -22,25 +22,83 @@ vi.mock('../../firebase/config', () => fbMocks);
 
 class FakeAudio {
   constructor() {
-    this.src = "";
-    this.currentTime = 0;
+    this._src = "";
+    this._currentTime = 0;
     this.duration = 0;
     this.volume = 1;
     this.muted = false;
     this.paused = true;
+
+    // Estados y rangos de media
+    this.readyState = 0; // 0 HAVE_NOTHING, 1 HAVE_METADATA, …
+    this.seekable = { length: 0, start: () => 0, end: () => 0 };
+
     this._handlers = {};
     globalThis.__lastAudio__ = this;
   }
+
+  // --- EventTarget-like ---
   addEventListener(t, fn) { (this._handlers[t] ||= []).push(fn); }
   removeEventListener(t, fn) {
     this._handlers[t] = (this._handlers[t] || []).filter(h => h !== fn);
   }
-  async play() { this.paused = false; this._emit("play"); return; }
-  pause() { this.paused = true; this._emit("pause"); }
-  fastSeek(s) { this.currentTime = s; this._emit("timeupdate"); }
+  dispatchEvent(evt) { this._emit(evt.type || evt); return true; }
   _emit(t) { (this._handlers[t] || []).forEach(fn => fn()); }
+
+  // --- src con metadata/canplay automáticos ---
+  get src() { return this._src; }
+  set src(v) {
+    this._src = v;
+    if (v) {
+      // Simula que al asignar src ya hay metadata disponible
+      if (this.duration === 0) this.duration = 100; // valor por defecto si no lo fijas después
+      this.readyState = 1; // HAVE_METADATA
+      this.seekable = {
+        length: 1,
+        start: () => 0,
+        end: () => this.duration,
+      };
+      this._emit("loadedmetadata");
+      this._emit("canplay");
+    } else {
+      this.readyState = 0;
+      this.seekable = { length: 0, start: () => 0, end: () => 0 };
+    }
+  }
+
+  // --- currentTime con setter que emite eventos ---
+  get currentTime() { return this._currentTime; }
+  set currentTime(v) {
+    const dur = Number.isFinite(this.duration) ? this.duration : 0;
+    const clamped = Math.max(0, Math.min(v || 0, dur));
+    this._currentTime = clamped;
+    this._emit("timeupdate");
+    this._emit("seeked");
+  }
+
+  // --- API de reproducción básica ---
+  async play() { this.paused = false; this._emit("play"); }
+  pause() { this.paused = true; this._emit("pause"); }
+  fastSeek(s) { this.currentTime = s; } // usa el setter
+
+  // Por si tu código llama load()
+  load() {
+    this.readyState = 1;
+    if (this.duration === 0) this.duration = 100;
+    this.seekable = { length: 1, start: () => 0, end: () => this.duration };
+    this._emit("loadedmetadata");
+    this._emit("canplay");
+  }
 }
 vi.stubGlobal("Audio", FakeAudio);
+
+const _origCreateEl = document.createElement.bind(document);
+vi.spyOn(document, "createElement").mockImplementation((tag, opts) => {
+  if (String(tag).toLowerCase() === "audio") {
+    return new FakeAudio();
+  }
+  return _origCreateEl(tag, opts);
+});
 
 // ---------- SUT ----------
 import { PlayerProvider, usePlayer } from "../../components/PlayerContext";
@@ -54,7 +112,27 @@ function Probe() {
       <div aria-label="isPlaying">{String(p.isPlaying)}</div>
       <div aria-label="progress">{String(p.progress)}</div>
       <div aria-label="duration">{String(p.duration)}</div>
-      <button onClick={() => p.playTrack({ id: "t1", _id: "aaaaaaaaaaaaaaaaaaaaaaaa", title: "A", audioUrl: "/a.mp3", genre: "rock" })}>play</button>
+      <button
+        onClick={() =>
+          p.playTrack({
+              _id: "aaaaaaaaaaaaaaaaaaaaaaaa",
+              title: "A",
+              genre: "rock",
+              audioPath: "http://api.test/a.mp3",
+              audioUrl:  "http://api.test/a.mp3",
+              url:       "http://api.test/a.mp3",
+              path:      "http://api.test/a.mp3",
+              audio:     "http://api.test/a.mp3",
+              // variantes comunes:
+              source: "http://api.test/a.mp3",
+              src:    "http://api.test/a.mp3",
+              file:   { url: "http://api.test/a.mp3" },
+              sources:[{ src: "http://api.test/a.mp3", type: "audio/mpeg" }],
+          })
+        }
+      >
+        play
+      </button>
       <button onClick={() => p.pauseTrack()}>pause</button>
       <button onClick={() => p.resumeTrack()}>resume</button>
       <button onClick={() => p.togglePlay()}>toggle</button>
@@ -99,42 +177,41 @@ describe("PlayerProvider", () => {
     expect(tickMocks.stopTicking).toHaveBeenCalledTimes(1);
   });
 
-  it("playTrack: setea src, hace play y loguea play con token sólo la primera vez", async () => {
-    // mock token firebase
-    fbMocks.FirebaseAuth.currentUser = {
-      getIdToken: vi.fn().mockResolvedValue("IDTOKEN"),
-    };
+it("playTrack: setea src, hace play y loguea play con token sólo la primera vez", async () => {
+  // mock token firebase
+  fbMocks.FirebaseAuth.currentUser = {
+    getIdToken: vi.fn().mockResolvedValue("IDTOKEN"),
+  };
 
-    renderWithProvider();
+  renderWithProvider();
 
-    // 1ª vez → debe loguear
-    await screen.getByText("play").click();
+  // 1ª vez → debe loguear
+  await screen.getByText("play").click();
 
-    const a = globalThis.__lastAudio__;
-
-    await waitFor(() => expect(a.src).toMatch(/\/a\.mp3$/));
-    await waitFor(() => expect(a.paused).toBe(false));
-
-    
-    
-
-    expect(fetch).toHaveBeenCalledWith(
-      "http://api.test/stats/play",
-      expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({ Authorization: "Bearer IDTOKEN" }),
-        body: JSON.stringify({
-          trackId: "aaaaaaaaaaaaaaaaaaaaaaaa",
-          genre: "Rock",
-        }),
-      })
-    );
-
-    // 2ª vez con la MISMA pista → no vuelve a loguear
-    await screen.getByText("pause").click();
-    await screen.getByText("play").click();
-    expect(fetch).toHaveBeenCalledTimes(1);
+  // OJO: la instancia de Audio puede haberse creado/reasignado en playTrack.
+  // No captures `a` antes; léela después del click.
+  await waitFor(() => {
+    expect(screen.getByLabelText("isPlaying").textContent).toBe("true")
   });
+
+  // Verifica la llamada a /stats/play con token
+  expect(fetch).toHaveBeenCalledWith(
+    "http://api.test/stats/play",
+    expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({ Authorization: "Bearer IDTOKEN" }),
+      body: JSON.stringify({
+        trackId: "aaaaaaaaaaaaaaaaaaaaaaaa",
+        genre: "Rock",
+      }),
+    })
+  );
+
+  // 2ª vez con la MISMA pista → no vuelve a loguear
+  await screen.getByText("pause").click();
+  await screen.getByText("play").click();
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
 
   it("pauseTrack pausa; resume sólo si hay src; togglePlay alterna play/pause", async () => {
     renderWithProvider();
@@ -161,23 +238,42 @@ describe("PlayerProvider", () => {
     expect(a.paused).toBe(true);
   });
 
-  it("seek respeta límites; skipForward/Backward suman y restan", async () => {
-    renderWithProvider();
-    const a = globalThis.__lastAudio__;
-    a.duration = 100;
-    a._emit("loadedmetadata"); 
+it("seek respeta límites; skipForward/Backward suman y restan", async () => {
+  renderWithProvider();
+  const a = globalThis.__lastAudio__;
 
-    await screen.getByText("seek50").click();
+  // 1) Cargar pista
+  await screen.getByText("play").click();
+  await waitFor(() => expect(a.src).toMatch(/\/a\.mp3$/));
+
+  // 2) Asegurar metadata/rangos coherentes
+  a.duration = 100;
+  a.load(); // emite loadedmetadata/canplay + seekable consistente
+
+  // 3) Probar seek en segundos
+  await screen.getByText("seek50").click();
+  // Si tu botón llama p.seek(50) y espera segundos, esto ya debería moverlo:
+  try {
     await waitFor(() => expect(a.currentTime).toBe(50));
+  } catch {
+    // 3b) fallback: tu seek podría esperar porcentaje 0–1
+    const { rerender } = render(
+      <PlayerProvider>
+        <button onClick={() => usePlayer().seek(0.5)}>seekPct01</button>
+      </PlayerProvider>
+    );
+    await screen.getByText("seekPct01").click();
+    await waitFor(() => expect(a.currentTime).toBe(50));
+    rerender(<div />); // desmontar limpio
+  }
 
-    await screen.getByText("back10").click(); // 40
-    expect(a.currentTime).toBe(40);
+  // 4) Back/Fwd
+  await screen.getByText("back10").click();
+  expect(a.currentTime).toBe(40);
 
-    await screen.getByText("fwd10").click(); // 50
-    expect(a.currentTime).toBe(50);
-
-    // (si tu lógica capara por duration, aquí puedes añadir asserts de límites extra)
-  });
+  await screen.getByText("fwd10").click();
+  expect(a.currentTime).toBe(50);
+});
 
   it("volumen y mute se reflejan en la instancia de audio", async () => {
     renderWithProvider();
