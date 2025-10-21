@@ -16,10 +16,10 @@ export default function AppLayout({ children, player }) {
 
       {/* Header (mobile y desktop) */}
       <header className="lg:col-[2] lg:row-[1]">
-        <div className="lg:hidden">
+        <div className="lg:hidden" data-testid="header-mobile">
           <Header onOpenSideBar={() => setSidebarOpen(true)} />
         </div>
-        <div className="hidden lg:block">
+        <div className="hidden lg:block" data-testid="header-desktop">
           {/* Si no quieres header en desktop, quita este bloque */}
           <Header onOpenSideBar={() => {}} />
         </div>
@@ -38,7 +38,7 @@ export default function AppLayout({ children, player }) {
 
       {/* Drawer móvil */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
+        <div className="lg:hidden fixed inset-0 z-50" data-testid="mobile-drawer">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-72 bg-[#111] shadow-xl p-4">
             <button

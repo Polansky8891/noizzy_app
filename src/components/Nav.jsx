@@ -1,7 +1,6 @@
 import { IoHomeOutline } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { Link } from "react-router-dom";
-import { SearchBar } from "./SearchBar";
 
 export const Nav = () => {
   return (
@@ -9,7 +8,7 @@ export const Nav = () => {
       <div className="h-16 flex items-center justify-between">
         {/* Logo */}
         <div className="text-3xl font-bold px-4">Logo</div>
-        <SearchBar />
+        
         {/* Menú */}
         <div className="flex items-center">
           
