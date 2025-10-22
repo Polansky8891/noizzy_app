@@ -84,7 +84,7 @@ export const Register = () => {
             Sign Up
           </h2>
 
-          <form className="flex flex-col" onSubmit={handleSubmit}>
+          <form className="flex flex-col" onSubmit={handleSubmit} noValidate>
             {/* First / Last Name */}
             <div className="flex flex-col md:flex-row md:space-x-4 space-y-5 md:space-y-0 mb-5">
               <div className="w-full">

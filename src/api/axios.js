@@ -1,8 +1,6 @@
 import axios from "axios";
 import { FirebaseAuth } from "../firebase/config";
 import { API_BASE } from "./base";
-import { store } from "../store/store";
-import { logout, setToken } from "../store/auth/authSlice";
 
 
 const api = axios.create({
