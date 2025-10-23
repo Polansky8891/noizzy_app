@@ -162,14 +162,36 @@ const favoritesSlice = createSlice({
   initialState,
   reducers: {
     toggleLocal(state, action) {
-      const id = String(action.payload);
+      const payload = action.payload;
+      const id = String(payload?.id ?? payload);
+      const track = typeof payload === "object" && payload.track ? payload.track : (typeof payload === "object" ? payload : null);
+
+      // quitar de favoritos (ids + items)
       if (state.ids.includes(id)) {
         state.ids = state.ids.filter((x) => x !== id);
         state.items = state.items.filter((t) => String(t._id || t.id) !== id);
-      } else {
-        state.ids = Array.isArray(state.ids) ? state.ids : [];
-        state.ids.push(id);
+        return;
       }
+
+      // añadir a favoritos (ids + items)
+      state.ids = Array.isArray(state.ids) ? state.ids : [];
+      if (!state.ids.includes(id)) state.ids.push(id);
+
+      // si tenemos el track, lo metemos en items (optimista)
+      if (track) {
+        const sid = String(track._id || track.id || id);
+        const exists = state.items.some((t) => String(t._id || t.id) === sid);
+        const normalized = {
+          _id: sid,
+          id: sid,
+          title: track.title || "Unknown",
+          artist: track.artist || "",
+          coverUrl: track.coverUrl || track.cover || track.image || null,
+          ...track,
+        };
+        if (!exists) state.items.unshift(normalized);
+      }
+
       // cache se sincroniza cuando llega el próximo fulfilled (o podrías escribir aquí si quisieras)
     },
     resetFavorites(state) {

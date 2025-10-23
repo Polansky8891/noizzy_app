@@ -100,7 +100,7 @@ export const MusicPlayer = () => {
 
                   {/* fav a la derecha */}
                   <div className="ml-auto">
-                    <FavButton trackId={trackId} size={16} />
+                    <FavButton trackId={trackId} track={currentTrack} size={16} />
                   </div>
                 </div>
               )}
@@ -118,7 +118,7 @@ export const MusicPlayer = () => {
 
                 {currentTrack && (
                   <div className="lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2">
-                    <FavButton trackId={trackId} size={16} />
+                    <FavButton trackId={trackId} track={currentTrack} size={16} />
                   </div>
                 )}
               </div>
