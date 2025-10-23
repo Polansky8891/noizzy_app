@@ -128,19 +128,31 @@ const RowItem = memo(function RowItem({ row, activeAudio, onPlay, onToggle, prio
   const n = normalizeRow(row);
   const isActive = !!activeAudio && n.audio === activeAudio;
 
-  const onClickCover = (e) => {
-    e.stopPropagation();
+  const handleRowClick = () => {
     if (isActive && typeof onToggle === "function") onToggle();
     else onPlay(row);
   };
 
   return (
     <div
-      className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)] gap-3 items-start px-3 py-2 border-b border-white/20 bg-black"
+      className={`grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)] gap-3 items-center px-3 py-2 border-b border-white/20 bg-black cursor-pointer transition-colors ${
+        isActive ? "bg-[#0A84FF]/10" : "hover:bg-white/5"
+      }`}
       role="row"
+      onClick={handleRowClick}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") handleRowClick();
+      }}
     >
       <div role="gridcell">
-        <CoverImg src={n.cover} isActive={isActive} onClick={onClickCover} title={n.title} priority={priority} />
+        <CoverImg
+          src={n.cover}
+          isActive={isActive}
+          onClick={handleRowClick}   // 👈 ahora también dispara play/pause
+          title={n.title}
+          priority={priority}
+        />
       </div>
       <div role="gridcell">
         <TitleCell title={n.title} isActive={isActive} />
@@ -164,6 +176,8 @@ const RowItem = memo(function RowItem({ row, activeAudio, onPlay, onToggle, prio
     a.priority === b.priority
   );
 });
+
+
 
 /* ─────────────────────────── componente ────────────────────────── */
 
