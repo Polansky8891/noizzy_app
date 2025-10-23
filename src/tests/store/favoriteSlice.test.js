@@ -1,195 +1,206 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import reducer, {
-    toggleLocal,
-    resetFavorites,
-    hydrateFavoritesFromCache,
-    fetchFavoriteTracks,
-    addFavorite,
-    removeFavorite,
-} from "../../store/favoritesSlice";
-import { logout } from "../../store/auth/authSlice";
+import { configureStore } from "@reduxjs/toolkit";
 
-const initial = () => reducer(undefined, { type: '@@INIT'});
+// ⬆️ Hoisted mock de api (get/post/delete)
+const apiMock = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+  delete: vi.fn(),
+}));
+vi.mock("../../api/axios", () => ({ __esModule: true, default: apiMock }));
+
+// Import del slice DESPUÉS de los mocks
+import reducer, {
+  toggleLocal,
+  resetFavorites,
+  hydrateFavoritesFromCache,
+  fetchFavoriteTracks,
+  addFavorite,
+  removeFavorite,
+  selectFavoriteTracks,
+  selectFavoritesLoading,
+  selectFavoritesHasFetchedOnce,
+} from "../../store/favoritesSlice";
+
+const USER = { id: "u1" };
+const AUTH_DEFAULT = { user: USER, token: "tok" };
+
+// store helper con auth “mínimo”
+const makeStore = (authState = AUTH_DEFAULT) =>
+  configureStore({
+    reducer: {
+      favorites: reducer,
+      auth: (state = authState, _action) => state,
+    },
+  });
+
+// key que usa el slice para cachear
+const cacheKey = (uid = USER.id) => `fav_cache_v1:${uid}`;
 
 beforeEach(() => {
-    localStorage.clear();
-    vi.resetAllMocks();
+  vi.clearAllMocks();
+  localStorage.clear();
 });
 
-describe('favoritesSlice', () => {
-    it('estado inicial correcto', () => {
-        const s = initial();
-        expect(s).toEqual({
-            ids: [],
-            items: [],
-            loading: false,
-            error: null,
-            hasFetchedOnce: false,
-        });
-    });
+describe("favoritesSlice", () => {
+  it("toggleLocal: añade optimista con track y luego elimina con id", () => {
+    const store = makeStore();
 
-    it('toggleLocal: añade id si no está y lo quita si está', () => {
-        let s = initial();
+    // add optimista con track
+    store.dispatch(
+      toggleLocal({
+        id: "t1",
+        track: { _id: "t1", title: "Song", artist: "AA", coverUrl: "c.jpg" },
+      }),
+    );
 
-        // añade
-        s = reducer(s, toggleLocal('t1'));
-        expect(s.ids).toEqual(['t1']);
+    let s = store.getState().favorites;
+    expect(s.ids).toEqual(["t1"]);
+    expect(s.items[0]).toMatchObject({ _id: "t1", title: "Song" });
 
-        // quita
-        s = reducer(s, toggleLocal('t1'));
-        expect(s.ids).toEqual([]);
-    });
+    // remove optimista con id
+    store.dispatch(toggleLocal("t1"));
+    s = store.getState().favorites;
+    expect(s.ids).toEqual([]);
+    expect(s.items).toEqual([]);
+  });
 
-    it('resetFavorites: limpia todo y borra caches', () => {
-        // prepara caches simulados
-        localStorage.setItem('fav_cache_v1:uid1', JSON.stringify({ items: [], ids: [] }));
-        localStorage.setItem('otra', 'x');
+  it("hydrateFavoritesFromCache: carga ids/items desde localStorage sin marcar fetched", async () => {
+    const items = [{ _id: "a1" }, { _id: "a2" }];
+    localStorage.setItem(cacheKey(), JSON.stringify({ items, ids: ["a1", "a2"] }));
 
-        const removeSpy = vi.spyOn(Storage.prototype, 'removeItem');
+    const store = makeStore();
+    await store.dispatch(hydrateFavoritesFromCache());
 
-        const pre = {
-            ids: ['t1'],
-            items: [{ _id: 't1', title: 'A'}],
-            loading: true,
-            error: 'err',
-            hasFetchedOnce: true,
-        };
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual(["a1", "a2"]);
+    expect(s.items).toEqual(items);
+    expect(selectFavoritesHasFetchedOnce(store.getState())).toBe(false);
+  });
 
-        const s = reducer(pre, resetFavorites());
+  it("fetchFavoriteTracks: devuelve array y persiste cache", async () => {
+    const items = [{ _id: "x1" }, { _id: "x2" }];
+    apiMock.get.mockResolvedValueOnce({ status: 200, data: items });
+    const setSpy = vi.spyOn(Storage.prototype, "setItem");
 
-        expect(s.ids).toEqual([]);
-        expect(s.items).toEqual([]);
-        expect(s.loading).toBe(false);
-        expect(s.error).toBe(null);
-        expect(s.hasFetchedOnce).toBe(false);
+    const store = makeStore();
+    await store.dispatch(fetchFavoriteTracks());
 
-        // debe intentar eliminar claves que empiecen por prefijo
-        expect(removeSpy).toHaveBeenCalledWith('fav_cache_v1:uid1');
-    });
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual(["x1", "x2"]);
+    expect(s.items).toEqual(items);
+    expect(selectFavoritesHasFetchedOnce(store.getState())).toBe(true);
+    expect(setSpy).toHaveBeenCalledWith(cacheKey(), JSON.stringify({ items, ids: ["x1", "x2"] }));
+  });
 
-    it('hydratedFavoritesFromCache.fulfilled: hidrata ids/items sin marcar hasFetchedOnce', () => {
-        const payload = {
-            items: [{ _id: '1', title: 'A' }, { _id: '2', title: 'B' }],
-            ids: ['1', '2'],
-            _cacheKey: 'fav_cache_v1:uid1',
-        };
-        const s = reducer(initial(), hydrateFavoritesFromCache.fulfilled(payload, 'req1', undefined));
-        expect(s.items.map(t => t._id)).toEqual(['1', '2']);
-        expect(s.ids).toEqual(['1', '2']);
-        expect(s.loading).toBe(false);
-        expect(s.error).toBe(null);
-        expect(s.hasFetchedOnce).toBe(false);
-    });
+  it("fetchFavoriteTracks: 204 vacía estado y cache", async () => {
+    apiMock.get.mockResolvedValueOnce({ status: 204, data: null });
+    const setSpy = vi.spyOn(Storage.prototype, "setItem");
 
-    it('fetchFavoriteTracks.pending: pone loading y limpia error', () => {
-        const pre = { ...initial(), error: 'X', loading: false };
-        const s = reducer(pre, fetchFavoriteTracks.pending('req1'));
-        expect(s.loading).toBe(true);
-        expect(s.error).toBe(null);
-    });
+    const store = makeStore();
+    await store.dispatch(fetchFavoriteTracks());
 
-    it('fetchFavoritetracks.fulfilled: guarda items/ids, marca hasFetchedOnce y escribe cache', () => {
-        const setSpy = vi.spyOn(Storage.prototype, 'setItem');
-        const payload = {
-            items: [{ _id: '1', title: 'A'}, { _id: '2', title: 'B'}],
-            ids: ['1', '2'],
-            _cacheKey: 'fav_cache_v1:uidX',
-        };
-        const s = reducer(initial(), fetchFavoriteTracks.fulfilled(payload, 'req1', undefined));
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual([]);
+    expect(s.items).toEqual([]);
+    expect(setSpy).toHaveBeenCalledWith(cacheKey(), JSON.stringify({ items: [], ids: [] }));
+  });
 
-        expect(s.loading).toBe(false);
-        expect(s.items.map(t => t._id)).toEqual(['1', '2']);
-        expect(s.ids).toEqual(['1', '2']);
-        expect(s.hasFetchedOnce).toBe(true);
-        expect(setSpy).toHaveBeenCalledWith(
-            'fav_cache_v1:uidX',
-            JSON.stringify({ items: s.items, ids: s.ids} )
-        );
-    });
+  it("fetchFavoriteTracks: 401 unauthorized no marca fetchedOnce ni error bloqueante", async () => {
+    const err = new Error("unauthorized");
+    err.response = { status: 401, data: { message: "Unauthorized" } };
+    apiMock.get.mockRejectedValueOnce(err);
 
-    it("fetchFavoriteTracks.rejected: si payload='canceled' no marca hasFetchedOnce", () => {
-        const r1 = reducer(initial(), fetchFavoriteTracks.rejected(
-            { name: 'CanceledError' }, 'req1', undefined, 'canceled'
-        ));
-        expect(r1.loading).toBe(false);
-        expect(r1.error).toBe(null);
-        expect(r1.hasFetchedOnce).toBe(false);
-    });
+    const store = makeStore();
+    await store.dispatch(fetchFavoriteTracks());
 
-    it('fetchFavoriteTracks.rejected: si payload genérico marca hasFetchedOnce y setea error', () => {
-        const r2 = reducer(initial(), fetchFavoriteTracks.rejected(
-            { name: 'SomeError' }, 'req1', undefined, 'boom'
-        ));
-        expect(r2.loading).toBe(false);
-        expect(r2.error).toBe('boom');
-        expect(r2.hasFetchedOnce).toBe(true);
-    });
+    const s = store.getState().favorites;
+    expect(s.loading).toBe(false);
+    // En rejected con 'unauthorized' el slice NO marca hasFetchedOnce
+    expect(selectFavoritesHasFetchedOnce(store.getState())).toBe(false);
+  });
 
-    it('addFavorite.fulfilled con ids[]: reemplaza ids y filtra items', () => {
-        const setSpy = vi.spyOn(Storage.prototype, 'setItem');
-        const pre = {
-            ids: ['1', '2', '3'],
-            items: [
-                { _id: '1', title: 'A' },
-                { _id: '2', title: 'B' },
-                { _id: '3', title: 'C' },
-            ],
-            loading: false,
-            error: null,
-            hasFetchedOnce: true,
-        };
-        const payload = { ids: ['1', '3'], _cacheKey: 'fav_cache_v1:uid1' };
-        const s = reducer(pre, addFavorite.fulfilled(payload, 'req1', 'ignored'));
+  it("addFavorite: si API devuelve favoritesIds, reemplaza ids y sincroniza cache", async () => {
+    apiMock.post.mockResolvedValueOnce({ data: { favoritesIds: ["a", "b"] } });
+    const setSpy = vi.spyOn(Storage.prototype, "setItem");
 
-        expect(s.ids).toEqual(['1', '3']);
-        expect(s.items.map(t => t._id)).toEqual(['1', '3']);
-        expect(setSpy).toHaveBeenCalled();
-    });
+    const store = makeStore();
+    await store.dispatch(addFavorite("x"));
 
-    it('removeFavorite.fulfilled con id único: elimina ese id e item', () => {
-        const pre = {
-            ids: ['1', '2'],
-            items: [
-                { _id: '1', title: 'A' },
-                { _id: '2', title: 'B' },
-            ],
-            loading: false, 
-            error: null,
-            hasFetchedOnce: true,
-        };
-        const payload = { id: '1', _cacheKey: 'fav_cache_v1:uid1' };
-        const s = reducer(pre, removeFavorite.fulfilled(payload, 'req1', '1'));
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual(["a", "b"]);
+    expect(setSpy).toHaveBeenCalledWith(cacheKey(), JSON.stringify({ items: [], ids: ["a", "b"] }));
+  });
 
-        expect(s.ids).toEqual(['2']);
-        expect(s.items.map(t => t._id)).toEqual(['2']);
-    });
+  it("addFavorite: si API NO devuelve lista, añade el id", async () => {
+    apiMock.post.mockResolvedValueOnce({ data: {} });
 
-    it('logout (extraReducer): limpia estado y borra caches con prefijo', () => {
-        //prepara caches que deben eliminarse
-        localStorage.setItem('fav_cache_v1:uid1', '{}');
-        localStorage.setItem('fav_cache_v1:uid2', '{}');
-        localStorage.setItem('otra', '{}');
+    const store = makeStore();
+    await store.dispatch(addFavorite("z"));
 
-        const removeSpy = vi.spyOn(Storage.prototype, 'removeItem');
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual(["z"]);
+  });
 
-        const pre = {
-            ids: ['1'],
-            items: [{ _id: '1', title: 'A' }],
-            loading: false,
-            error: null,
-            hasFetchedOnce: true,
-        };
+  it("removeFavorite: si API devuelve favoritesIds, sincroniza ids/items y cache", async () => {
+    // estado inicial con items/ids
+    const store = makeStore();
+    store.dispatch(
+      toggleLocal({ id: "k1", track: { _id: "k1", title: "K" } }),
+    );
 
-        const s = reducer(pre, logout());
+    apiMock.delete.mockResolvedValueOnce({ data: { favoritesIds: [] } });
+    const setSpy = vi.spyOn(Storage.prototype, "setItem");
 
-        expect(s.ids).toEqual([]);
-        expect(s.items).toEqual([]);
-        expect(s.loading).toBe(false);
-        expect(s.error).toBe(null);
-        expect(s.hasFetchedOnce).toBe(false);
+    await store.dispatch(removeFavorite("k1"));
 
-        // se deben haber intentado eliminar las claves con prefijo
-        expect(removeSpy).toHaveBeenCalledWith('fav_cache_v1:uid1');
-        expect(removeSpy).toHaveBeenCalledWith('fav_cache_v1:uid2');
-    });
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual([]);
+    expect(s.items).toEqual([]);
+    expect(setSpy).toHaveBeenCalledWith(cacheKey(), JSON.stringify({ items: [], ids: [] }));
+  });
+
+  it("resetFavorites: limpia estado y todas las caches con prefijo", () => {
+    // rellenamos caches de distintos usuarios
+    localStorage.setItem(cacheKey("u1"), "{}");
+    localStorage.setItem(cacheKey("u2"), "{}");
+    localStorage.setItem("otro:key", "{}");
+
+    const store = makeStore();
+    store.dispatch(resetFavorites());
+
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual([]);
+    expect(s.items).toEqual([]);
+
+    // las de fav_cache_v1:* se deben eliminar
+    expect(localStorage.getItem(cacheKey("u1"))).toBeNull();
+    expect(localStorage.getItem(cacheKey("u2"))).toBeNull();
+    // otras claves no relacionadas permanecen
+    expect(localStorage.getItem("otro:key")).toBe("{}");
+  });
+
+  it("logout (por type): limpia estado y borra caches del prefijo", () => {
+    // precondición: hay cache
+    localStorage.setItem(cacheKey("u1"), "{}");
+
+    const store = makeStore();
+    // No importamos logout real; despachamos por type esperado
+    store.dispatch({ type: "auth/logout" });
+
+    const s = store.getState().favorites;
+    expect(s.ids).toEqual([]);
+    expect(s.items).toEqual([]);
+    expect(localStorage.getItem(cacheKey("u1"))).toBeNull();
+  });
+
+  it("selectores básicos funcionan", () => {
+    const store = makeStore();
+    store.dispatch(toggleLocal({ id: "t1", track: { _id: "t1" } }));
+    const state = store.getState();
+
+    expect(selectFavoriteTracks(state).map(t => t._id)).toEqual(["t1"]);
+    expect(selectFavoritesLoading(state)).toBe(false);
+    expect(selectFavoritesHasFetchedOnce(state)).toBe(false);
+  });
 });

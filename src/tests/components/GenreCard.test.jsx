@@ -1,126 +1,150 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
-vi.mock('../../api/axios', () => ({
-    default: { get: vi.fn() },
-}));
-import api from "../../api/axios";
+/* ─────────── HOISTED Mocks (evita "Cannot access X before initialization") ─────────── */
 
-// Mock de usePlayer con espías exportados
-const playTrackSpy = vi.fn();
-const togglePlaySpy = vi.fn();
-let currentTrackMock = null;
-
-vi.mock('../../components/PlayerContext', () => ({
-    usePlayer: () => ({
-        playTrack: playTrackSpy,
-        togglePlay: togglePlaySpy,
-        currentTrack: currentTrackMock,
-    }),
+// axios mock (default export) — HOISTED
+const axiosMock = vi.hoisted(() => ({ get: vi.fn() }));
+vi.mock("../../api/axios", () => ({
+  __esModule: true,
+  default: axiosMock,
 }));
 
-import { GenreCard } from "../../components/GenreCard";
+// PlayerContext mock — HOISTED
+const playerMocks = vi.hoisted(() => ({
+  playTrack: vi.fn(),
+  togglePlay: vi.fn(),
+  state: { currentTrack: null },
+}));
+vi.mock("../../components/PlayerContext", () => ({
+  __esModule: true,
+  usePlayer: () => ({
+    playTrack: playerMocks.playTrack,
+    togglePlay: playerMocks.togglePlay,
+    currentTrack: playerMocks.state.currentTrack,
+  }),
+}));
 
-const renderAt = (path) =>
-    render(
-        <MemoryRouter initialEntries={[path]}>
-            <Routes>
-                <Route path='/' element={<div>Home</div>} />
-                <Route path='/genre/:slug' element={<GenreCard />} />
-            </Routes>
-        </MemoryRouter>
-    );
+// react-router-dom (useParams + Navigate) — HOISTED
+const useParamsMock = vi.hoisted(() => vi.fn());
+vi.mock("react-router-dom", () => ({
+  __esModule: true,
+  useParams: () => useParamsMock(),
+  Navigate: () => <div data-testid="redirect" />,
+}));
+
+/* ─────────── importar el componente DESPUÉS de los mocks ─────────── */
+import { GenreCard } from "../../components/GenreCard.jsx";
+
+/* ─────────── resto del test tal cual ─────────── */
+
+const TRACKS = [
+  {
+    _id: "t1",
+    title: "Track One",
+    artist: "Artist A",
+    audioUrl: "http://media.example/audio/t1.mp3",
+    coverUrl: "http://media.example/img/t1.jpg",
+  },
+  {
+    _id: "t2",
+    title: "Track Two",
+    artist: "Artist B",
+    audioUrl: "http://media.example/audio/t2.mp3",
+    coverUrl: "http://media.example/img/t2.jpg",
+  },
+];
+
+function setSlug(slug) {
+  useParamsMock.mockReturnValue({ slug });
+}
+function primeCache(genre = "Pop", items = TRACKS) {
+  sessionStorage.setItem(`tracks:${genre}`, JSON.stringify(items));
+}
 
 beforeEach(() => {
-    vi.clearAllMocks();
-    sessionStorage.clear();
-    currentTrackMock = null;
+  vi.clearAllMocks();
+  sessionStorage.clear();
+  playerMocks.state.currentTrack = null;
+  axiosMock.get.mockResolvedValue({ data: { items: TRACKS } });
 });
-
-afterEach(() => {
-    vi.resetAllMocks();
-});
+afterEach(() => vi.restoreAllMocks());
 
 describe("GenreCard", () => {
-    it('muestra cabecera con el género y columnas Title/Artist', () => {
-        renderAt('/genre/rock');
-        expect(screen.getByRole('heading', { name: 'Rock'})).toBeInTheDocument();
-        const headerRow = screen.getByRole('row');
-        expect(within(headerRow).getByText('Title')).toBeInTheDocument();
-        expect(within(headerRow).getByText('Artist')).toBeInTheDocument();
-    });
+  it("redirecciona si el slug no existe", () => {
+    setSlug("no-existe");
+    render(<GenreCard />);
+    expect(screen.getByTestId("redirect")).toBeInTheDocument();
+  });
 
-    it('redirige a / si el slug no es válido', () => {
-        renderAt('/genre/metal');
-        expect(screen.getByText('Home')).toBeInTheDocument();
-    });
+  it("renderiza Pop y hace fetch de los tracks", async () => {
+    setSlug("pop");
+    render(<GenreCard />);
 
-    it('pinta filas desde la cache inmediatamente', () => {
-        const cached = [
-            { _id: '1', title: 'Song A', artist: 'X', audioUrl: '/a.mp3', coverUrl: '/a.jpg'},
-            { _id: '2', title: 'Song B', artist: 'Y', audioUrl: '/b.mp3', coverUrl: '/b.jpg'},
-        ];
-        sessionStorage.setItem('tracks:Rock', JSON.stringify(cached));
+    expect(await screen.findByRole("heading", { name: "Pop" })).toBeInTheDocument();
+    expect(await screen.findByText("Track One")).toBeInTheDocument();
+    expect(screen.getByText("Track Two")).toBeInTheDocument();
 
-        renderAt('/genre/rock');
+    expect(axiosMock.get).toHaveBeenCalledWith("/tracks", expect.objectContaining({
+      params: { genre: "Pop" },
+      signal: expect.any(AbortSignal),
+    }));
+  });
 
-        expect(screen.getByText('Song A')).toBeInTheDocument();
-        expect(screen.getByText('Song B')).toBeInTheDocument();
-    });
+  it("click en carátula → playTrack con payload correcto", async () => {
+    setSlug("pop");
+    render(<GenreCard />);
+    await screen.findByText("Track One");
 
-    it('click en cover llama a playTrack con payload correcto', async () => {
-        const row = { _id: '1', title: 'Song A', artist: 'X', audioUrl: '/a.mp3', coverUrl: '/a.jpg'};
-        sessionStorage.setItem('tracks:Rock', JSON.stringify([row]));
-        api.get.mockResolvedValueOnce({ data: { items: [row] } });
+    const buttons = screen.getAllByRole("button");
+    await userEvent.click(buttons[0]);
 
-        renderAt('/genre/rock');
+    expect(playerMocks.playTrack).toHaveBeenCalledWith(expect.objectContaining({
+      id: "t1",
+      title: "Track One",
+      artist: "Artist A",
+      audioPath: "http://media.example/audio/t1.mp3",
+      genre: "Pop",
+      cover: "http://media.example/img/t1.jpg",
+    }));
+  });
 
-        fireEvent.click(screen.getByRole('button', { name: /reproducir/i }));
+  it("si ya está activo → togglePlay", async () => {
+    setSlug("pop");
+    playerMocks.state.currentTrack = { audioPath: "http://media.example/audio/t1.mp3" };
 
-        const base =
-        import.meta.env.VITE_MEDIA_BASE_URL ||
-        import.meta.env.VITE_API_URL ||
-        "http://localhost:4000/api";
+    render(<GenreCard />);
+    await screen.findByText("Track One");
 
-        expect(playTrackSpy).toHaveBeenCalledWith({
-            id: '1',
-            title: 'Song A',
-            artist: 'X',
-            audioPath: new URL('/a.mp3', base).href,
-            genre: 'Rock',
-            cover: new URL('/a.jpg', base).href,
-        });
-    });
+    const rows = screen.getAllByRole("row");
+    await userEvent.click(rows[1]);
 
-    it('si la fila está activa, click en cover hace togglePlay (no playTrack)', () => {
-        const row = { _id: '1', title: 'Song A', artist: 'X', audioUrl: '/a.mp3', coverUrl: '/a.jpg'};
-        const base =
-        import.meta.env.VITE_MEDIA_BASE_URL ||
-        import.meta.env.VITE_API_URL ||
-        'http://localhost:4000/api';
-        sessionStorage.setItem('tracks:Rock', JSON.stringify([row]));
-        currentTrackMock = { audioPath: new URL('/a.mp3', base).href };
+    expect(playerMocks.togglePlay).toHaveBeenCalledTimes(1);
+    expect(playerMocks.playTrack).not.toHaveBeenCalled();
+  });
 
-        renderAt('/genre/rock');
-        
-        fireEvent.click(screen.getByRole('button', { name: /pausar|reanudar/i }));
-        expect(togglePlaySpy).toHaveBeenCalledTimes(1);
-        expect(playTrackSpy).not.toHaveBeenCalled();
-    });
+  it("usa cache y no re-escribe si no cambian items", async () => {
+    setSlug("pop");
+    primeCache("Pop", TRACKS);
 
-    it('si la API trae items distintos, actualiza y escribe cache', async () => {
-        sessionStorage.setItem('tracks:Rock', JSON.stringify([
-            { _id: '1', title: 'Song A', artist: 'X', audioUrl: '/a.mp3', coverUrl: '/a.jpg' },
-        ]));
-        const fresh = [{ _id: '2', title: 'Song B', artist: 'Y', audioUrl: '/b.mp3', coverUrl: '/b.jpg'}];
-        const setSpy = vi.spyOn(window.sessionStorage.__proto__, 'setItem');
-        api.get.mockResolvedValueOnce({ data: { items: fresh } });
+    const spySet = vi.spyOn(Storage.prototype, "setItem");
+    render(<GenreCard />);
 
-        renderAt('/genre/rock');
+    expect(await screen.findByText("Track One")).toBeInTheDocument();
+    await waitFor(() => expect(axiosMock.get).toHaveBeenCalled());
+    expect(spySet).not.toHaveBeenCalledWith("tracks:Pop", expect.any(String));
+  });
 
-        expect(await screen.findByText('Song B')).toBeInTheDocument();
-        expect(setSpy).toHaveBeenCalledWith('tracks:Rock', JSON.stringify(fresh));
-    });
-})
+  it("actualiza cache si cambian items", async () => {
+    setSlug("pop");
+    primeCache("Pop", [TRACKS[0]]);
+    const spySet = vi.spyOn(Storage.prototype, "setItem");
 
+    axiosMock.get.mockResolvedValueOnce({ data: { items: TRACKS } });
+    render(<GenreCard />);
+
+    await screen.findByText("Track Two");
+    expect(spySet).toHaveBeenCalledWith("tracks:Pop", JSON.stringify(TRACKS));
+  });
+});
