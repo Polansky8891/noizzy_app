@@ -9,11 +9,13 @@ import reggaeImg from '../assets/images/reggae.png';
 import houseImg from '../assets/images/house.png';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { usePlayer } from '../components/PlayerContext';
 import TrackCarousel from '../components/TrackCarousel';
 import SmartImage from '../components/SmartImage';
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { fetchWithCacheWeb } from '../utils/cacheWeb';
+import SkeletonCarousel from '../components/SkeletonCarousel';
+import useDelayedVisible from '../hooks/useDelayedVisible';
+import { cacheGet, cacheSet } from '../utils/cacheLocal';
 
 const SLUG_TO_GENRE = {
   rock:"Rock", pop:"Pop", blues:"Blues", classic:"Classical",
@@ -60,7 +62,6 @@ function ChillCard({ t, onPlay }) {
   );
 }
 
-console.log("helloooooo");
 
 export const Home = () => {
   const genres = [
@@ -74,6 +75,26 @@ export const Home = () => {
     { name: 'Reggae', img: reggaeImg, slug: 'reggae' },
     { name: 'House', img: houseImg, slug: 'house' },
   ];
+
+  const FEELS = ['chill', 'energy', 'romantic'];
+  const FEEL_LIMIT = 18;
+
+  const [feelsLoading, setFeelsLoading] = useState({
+    chill: true,
+    energy: true,
+    romantic: true,
+  });
+
+  const initialByFeel = useMemo(() => {
+  const map = {};
+  FEELS.forEach((feel) => {
+    const keyUrl = buildKeyUrl({ feel, limit: 18 });
+    map[feel] = cacheGet(keyUrl);
+  });
+  return map;
+}, []);
+
+  
 
   // Prefetch de un género al pasar el ratón (se guarda en Cache Storage con TTL)
   const prefetchGenre = async (slug) => {
@@ -91,20 +112,31 @@ export const Home = () => {
   };
 
   // Prefetch silencioso de los 3 carruseles al entrar (primera carga más ágil)
-  useEffect(() => {
-    const FEELS = ['chill', 'energy', 'romantic'];
-    FEELS.forEach(async (feel) => {
-      const keyUrl = buildKeyUrl({ feel, limit: 18 });
+useEffect(() => {
+  FEELS.forEach(async (feel) => {
+    const keyUrl = buildKeyUrl({ feel, limit: FEEL_LIMIT });
+    try {
       await fetchWithCacheWeb(
         keyUrl,
         async () => {
-          const { data } = await api.get('/tracks', { params: { feel, limit: 18 } });
-          return data?.items ?? [];
+          const { data } = await api.get('/tracks', { params: { feel, limit: FEEL_LIMIT } });
+          const items = data?.items ?? [];
+          cacheSet(keyUrl, items);
+          return items;
         },
         { ttlMs: 15 * 60 * 1000 }
       );
-    });
-  }, []);
+    } finally {
+      setFeelsLoading((s) => ({ ...s, [feel]: false }));
+    }
+  });
+}, []);
+
+const showSkeleton = {
+  chill: useDelayedVisible(feelsLoading.chill && !initialByFeel.chill, 220),
+  energy: useDelayedVisible(feelsLoading.energy && !initialByFeel.energy, 220),
+  romantic: useDelayedVisible(feelsLoading.romantic && !initialByFeel.romantic, 220),
+};
 
   return (
     <div className="w-full min-h-0 bg-black rounded-3xl space-y-8 pb-6">
@@ -134,9 +166,27 @@ export const Home = () => {
         ))}
       </div>
 
-      <TrackCarousel feel="chill" title="Let's chill" />
-      <TrackCarousel feel="energy" title="Need some energy!" />
-      <TrackCarousel feel="romantic" title="Let's get sentimental" />
+      {/* Carruseles con skeleton controlado */}
+   <div className="min-h-[11rem]">
+      {initialByFeel.chill
+  ? <TrackCarousel feel="chill" title="Let's chill" initialItems={initialByFeel.chill} limit={FEEL_LIMIT} />
+  : showSkeleton.chill
+      ? <SkeletonCarousel title="Let's chill" />
+      : <TrackCarousel feel="chill" title="Let's chill" limit={FEEL_LIMIT} />}
+
+{initialByFeel.energy
+  ? <TrackCarousel feel="energy" title="Need some energy!" initialItems={initialByFeel.energy} limit={FEEL_LIMIT} />
+  : showSkeleton.energy
+      ? <SkeletonCarousel title="Need some energy!" />
+      : <TrackCarousel feel="energy" title="Need some energy!" limit={FEEL_LIMIT} />}
+
+{initialByFeel.romantic
+  ? <TrackCarousel feel="romantic" title="Let's get sentimental" initialItems={initialByFeel.romantic} limit={FEEL_LIMIT} />
+  : showSkeleton.romantic
+      ? <SkeletonCarousel title="Let's get sentimental" />
+      : <TrackCarousel feel="romantic" title="Let's get sentimental" limit={FEEL_LIMIT} />}
+
+    </div>
     </div>
   );
 };

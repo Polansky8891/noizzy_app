@@ -1,6 +1,9 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "./PlayerContext";
-import SmartImage from "./SmartImage";                 // 👈 imagen optimizada (carruseles)
-import { useCachedTracks } from "../hooks/useCachedTracks"; // 👈 cache SWR con Cache Storage
+import SmartImage from "./SmartImage";
+import { useCachedTracks } from "../hooks/useCachedTracks";
+import useDelayedVisible from "../hooks/useDelayedVisible";
+import api from "../api/axios";
 
 function TrackCard({ t, onPlay, priority }) {
   return (
@@ -21,7 +24,7 @@ function TrackCard({ t, onPlay, priority }) {
           sizes="160px"
           rounded="rounded-lg"
           className="bg-[#111]"
-          priority={priority} // 🔥 das prioridad a las 2 primeras
+          priority={priority}
         />
       </div>
       <div className="mt-2">
@@ -35,9 +38,9 @@ function TrackCard({ t, onPlay, priority }) {
 function SkeletonCard() {
   return (
     <div className="w-30 shrink-0 rounded-xl bg-[#1C1C1C] p-2">
-      <div className="aspect-square rounded-lg bg-white/10" />
-      <div className="mt-2 h-4 rounded bg-white/10" />
-      <div className="mt-1 h-3 w-2/3 rounded bg-white/10" />
+      <div className="aspect-square rounded-lg bg-white/10 animate-pulse" />
+      <div className="mt-2 h-4 rounded bg白/10 animate-pulse" />
+      <div className="mt-1 h-3 w-2/3 rounded bg-white/10 animate-pulse" />
     </div>
   );
 }
@@ -45,13 +48,46 @@ function SkeletonCard() {
 export default function TrackCarousel({
   feel,
   title,
-  limit = 24,
+  limit = 18,
   emptyText = "No hay temas disponibles.",
+  initialItems,
 }) {
   const { playTrack } = usePlayer();
 
-  // 👇 Cache Storage (SWR): pinta cache al instante, revalida en background
-  const { items, loading } = useCachedTracks({ feel, limit });
+  // Seed para evitar parpadeo
+  const hasSeed = Array.isArray(initialItems) && initialItems.length > 0;
+
+  // Datos del hook (SWR-like)
+  const { items: hookItems, loading: hookLoading } = useCachedTracks({ feel, limit });
+
+  // Fallback: si el hook termina y viene vacío, probamos una vez fetch directo
+  const [fallbackItems, setFallbackItems] = useState([]);
+  const triedFallbackRef = useRef(false);
+
+  useEffect(() => {
+    if (!hookLoading && (!hookItems || hookItems.length === 0) && !triedFallbackRef.current) {
+      triedFallbackRef.current = true;
+      (async () => {
+        try {
+          const { data } = await api.get("/tracks", { params: { feel, limit } });
+          const items = data?.items ?? [];
+          if (items.length > 0) setFallbackItems(items);
+        } catch {}
+      })();
+    }
+  }, [hookLoading, hookItems, feel, limit]);
+
+  // Qué mostramos: prioridad fallback > hook > seed
+  const displayItems = useMemo(() => {
+    if (fallbackItems.length > 0) return fallbackItems;
+    if (hookItems && hookItems.length > 0) return hookItems;
+    if (hasSeed) return initialItems;
+    return [];
+  }, [fallbackItems, hookItems, hasSeed, initialItems]);
+
+  // Loading efectivo: con seed no mostramos skeleton
+  const effectiveLoading = hasSeed ? false : hookLoading && displayItems.length === 0;
+  const showSkeleton = useDelayedVisible(effectiveLoading, 220);
 
   return (
     <section className="mt-8">
@@ -61,25 +97,28 @@ export default function TrackCarousel({
         </h2>
       )}
 
-      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
-        <style>{`.overflow-x-auto::-webkit-scrollbar{display:none}`}</style>
-
-        {(loading && items.length === 0 ? Array.from({ length: 10 }) : items).map((t, i) => (
-          <div key={(t && (t._id || t.id)) ?? i} className="snap-start">
-            {loading && items.length === 0 ? (
-              <SkeletonCard />
-            ) : (
-              <TrackCard
-                t={t}
-                onPlay={playTrack}   // ✅ igual que tenías (no rompemos tu Player)
-                priority={i < 2}     // ✅ primeras dos imágenes con prioridad real
-              />
-            )}
+      <div className="min-h-[11rem]">
+        {showSkeleton ? (
+          <div className="flex gap-3 overflow-x-hidden pb-2">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="snap-start">
+                <SkeletonCard />
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory transition-opacity duration-200 will-change-opacity [scrollbar-width:none] [-ms-overflow-style:none]">
+            <style>{`.overflow-x-auto::-webkit-scrollbar{display:none}`}</style>
+            {displayItems.map((t, i) => (
+              <div key={(t && (t._id || t.id)) ?? i} className="snap-start">
+                <TrackCard t={t} onPlay={playTrack} priority={i < 2} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {!loading && items.length === 0 && (
+      {!effectiveLoading && displayItems.length === 0 && (
         <p className="text-gray-400">{emptyText}</p>
       )}
     </section>
