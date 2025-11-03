@@ -15,6 +15,7 @@ import { API_BASE } from "../api/base";
 import { selectAuth } from "../store/auth/authSlice";
 import SmartImage from "../components/SmartImage";
 import useDelayedVisible from "../hooks/useDelayedVisible";
+import BackButton from "../components/BackButton";
 
 const MEDIA_BASE = import.meta.env.VITE_MEDIA_BASE_URL || API_BASE;
 const BRAND_BLUE = "#0A84FF";
@@ -203,44 +204,54 @@ export const Favorites = () => {
 
   const handleRowClick = useCallback((r) => { onPlay?.(r); }, [onPlay]);
 
-  return (
-    <div className="min-h-[60vh] p-4 sm:p-6">
-      <div className="bg-[#0F0F0F] border border-[#0A84FF]/60 rounded-2xl shadow-[0_0_20px_rgba(10,132,255,0.08)] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#0A84FF]/30">
-          <h2 className="text-lg font-semibold text-[#0A84FF]">Your Favorites</h2>
-        </div>
+ return (
+  <div className="min-h-[60vh] px-3 pt-2 sm:pt-3 sm:px-6">
+    {/* Back arriba del todo */}
+    <div className="pt-1 px-1">
+      <BackButton
+        className="-ml-1"
+        iconClassName="text-[#0A84FF]"
+        size={22}
+      />
+    </div>
 
-        <div className="p-2 sm:p-4">
-          {showSkeleton ? (
-            <SkeletonTable rows={10} />
-          ) : rows.length > 0 ? (
-            <div className="transition-opacity duration-200 opacity-100">
-              <DataTable
-                columns={columns}
-                data={rows}
-                onRowClicked={handleRowClick}
-                pointerOnHover
-                highlightOnHover
-                dense
-                persistTableHead
-                noTableHead
-                customStyles={customStyles}
-                noDataComponent={null}
-                progressPending={false}
-                keyField="_id"
-              />
-            </div>
-          ) : hasFetchedOnce && !loading ? (
-            <div className="py-12 text-center">
-              <p className="text-gray-300">
-                You haven&apos;t added any songs to your favourites yet.
-              </p>
-            </div>
-          ) : null}
-        </div>
+    {/* Card de favoritos */}
+    <div className="mt-3 bg-[#0F0F0F] border border-[#0A84FF]/60 rounded-2xl shadow-[0_0_20px_rgba(10,132,255,0.08)] overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#0A84FF]/30">
+        <h2 className="text-lg font-semibold text-[#0A84FF]">Your Favorites</h2>
+      </div>
+
+      <div className="p-2 sm:p-4">
+        {showSkeleton ? (
+          <SkeletonTable rows={10} />
+        ) : rows.length > 0 ? (
+          <div className="transition-opacity duration-200 opacity-100">
+            <DataTable
+              columns={columns}
+              data={rows}
+              onRowClicked={handleRowClick}
+              pointerOnHover
+              highlightOnHover
+              dense
+              persistTableHead
+              noTableHead
+              customStyles={customStyles}
+              noDataComponent={null}
+              progressPending={false}
+              keyField="_id"
+            />
+          </div>
+        ) : hasFetchedOnce && !loading ? (
+          <div className="py-12 text-center">
+            <p className="text-gray-300">
+              You haven&apos;t added any songs to your favourites yet.
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default Favorites;

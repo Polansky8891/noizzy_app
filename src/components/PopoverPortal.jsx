@@ -16,23 +16,16 @@ export default function PopoverPortal({
     const el = document.createElement("div");
     el.style.position = "fixed";
     el.style.zIndex = 9999;
-
     elRef.current = el;
   }
 
+  // Monta / desmonta contenedor del portal
   useEffect(() => {
     const el = elRef.current;
     if (!el) return;
     document.body.appendChild(el);
     setMounted(true);
-
-    const stop = (e) => e.stopPropagation();
-    el.addEventListener("mousedown", stop);
-    el.addEventListener("click", stop);
-
     return () => {
-      el.removeEventListener("mousedown", stop);
-      el.removeEventListener("click", stop);
       if (el.parentNode) el.parentNode.removeChild(el);
     };
   }, []);
@@ -54,9 +47,9 @@ export default function PopoverPortal({
     }
   };
 
+  // Reposicionar al abrir / scroll / resize
   useLayoutEffect(() => {
     if (!open) return;
-
     let raf = null;
     const schedule = () => {
       if (raf) return;
@@ -65,12 +58,9 @@ export default function PopoverPortal({
         place();
       });
     };
-
     schedule();
-
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
-
     return () => {
       if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("resize", schedule);
@@ -78,32 +68,33 @@ export default function PopoverPortal({
     };
   }, [open, anchorRef, align, offset]);
 
+  // Cerrar por outside (overlay) y Escape
   useEffect(() => {
     if (!open) return;
-
-    const handleDocClick = (e) => {
-      const root = elRef.current;
-      const anchor = anchorRef?.current;
-      if (!root) return;
-
-      if (anchor && (anchor === e.target || anchor.contains(e.target))) return;
-
-      setTimeout(() => onClose?.(), 0);
-    };
-
     const handleKey = (e) => {
       if (e.key === "Escape") onClose?.();
     };
-
-    document.addEventListener("click", handleDocClick, false);
     document.addEventListener("keydown", handleKey);
-
-    return () => {
-      document.removeEventListener("click", handleDocClick, false);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [open, anchorRef, onClose]);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
 
   if (!mounted || !open) return null;
-  return createPortal(children, elRef.current);
+
+  // Renderizamos un overlay click-through para cerrar por fuera + el popover
+  // Nota: el overlay está en el MISMO portal para no depender del DOM del padre.
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0"
+        onPointerDown={onClose}
+        onMouseDown={onClose}
+        aria-hidden="true"
+        style={{ cursor: "default" }}
+      />
+      <div>
+        {children}
+      </div>
+    </>,
+    elRef.current
+  );
 }

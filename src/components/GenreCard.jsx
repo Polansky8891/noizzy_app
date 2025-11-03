@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, memo } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { usePlayer } from "./PlayerContext";
 import api from "../api/axios";
+import BackButton from "./BackButton";
 
 /* ───────────────────────────── utils ───────────────────────────── */
 
@@ -108,7 +109,13 @@ const CoverImg = memo(function CoverImg({ src, isActive, onClick, title, priorit
 
 const TitleCell = memo(
   ({ title, isActive }) => (
-    <div className={`pr-2 whitespace-normal break-words leading-snug${isActive ? " text-[#E0FFFF]" : ""}`}>
+    <div
+      className={[
+        "pr-2 whitespace-normal break-words leading-snug",
+        "text-[#0A84FF]", // siempre azul Noizzy
+        isActive ? "drop-shadow-[0_0_6px_rgba(10,132,255,.45)]" : "",
+      ].join(" ")}
+    >
       {title}
     </div>
   ),
@@ -117,7 +124,7 @@ const TitleCell = memo(
 
 const ArtistCell = memo(
   ({ artist }) => (
-    <div className="pr-2 whitespace-normal break-words leading-snug text-neutral-300">
+    <div className="pr-2 whitespace-normal break-words leading-snug text-[#0A84FF]">
       {artist}
     </div>
   ),
@@ -250,41 +257,53 @@ export const GenreCard = () => {
     typeof window !== "undefined" ? Math.max(6, Math.ceil(window.innerHeight / ROW_H)) : 8;
 
   return (
-    <>
+  <div className="px-3">
+    {/* Fila del back arriba del todo */}
+    <div className="pt-2">
+      <BackButton
+        className="-ml-1"
+        iconClassName="text-[#0A84FF]"
+        size={22}
+      />
+    </div>
+
+    {/* Header: debajo de la flecha */}
+    <div
+      className={`mt-3 bg-gradient-to-b ${
+        HEADER_CLASS[genre] ?? "from-gray-700 to-gray-900"
+      } w-full h-[96px] p-6 rounded-lg flex items-end`}
+    >
+      <h2 className="text-5xl">{genre}</h2>
+    </div>
+
+    {/* Lista: un poco más abajo para respirar */}
+    <div className="mt-4 w-full rounded-md overflow-hidden bg-black">
       <div
-        className={`bg-gradient-to-b ${HEADER_CLASS[genre] ?? "from-gray-700 to-gray-900"} w-full h-[100px] p-6 rounded-lg flex items-end`}
+        role="row"
+        className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 h-[40px] items-center border-b border-white/25 bg-black"
       >
-        <h2 className="text-5xl">{genre}</h2>
+        <div />
+        <div className="text-[#0A84FF] text-sm font-semibold">Title</div>
+        <div className="text-[#0A84FF] text-sm font-semibold">Artist</div>
       </div>
 
-      <div className="mt-6 w-full rounded-md overflow-hidden bg-black">
-        {/* Cabecera (sin Cover y sin Duration) */}
-        <div
-          role="row"
-          className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 h-[40px] items-center border-b border-white/25 bg-black"
-        >
-          <div />
-          <div className="text-[#0A84FF] text-sm font-semibold">Title</div>
-          <div className="text-[#0A84FF] text-sm font-semibold">Artist</div>
-        </div>
-
-        {/* Filas */}
-        <div role="rowgroup">
-          {rows.map((row, i) => (
-            <RowItem
-              key={row._id || row.id}
-              row={row}
-              activeAudio={activeAudio}
-              onPlay={handlePlayRow}
-              onToggle={togglePlay}
-              priority={i < visibleCount}   // 👈 alta prioridad para lo visible
-            />
-          ))}
-          {rows.length === 0 && (
-            <div className="py-8 text-center text-[#0A84FF]">Sin canciones todavía</div>
-          )}
-        </div>
+      <div role="rowgroup">
+        {rows.map((row, i) => (
+          <RowItem
+            key={row._id || row.id}
+            row={row}
+            activeAudio={activeAudio}
+            onPlay={handlePlayRow}
+            onToggle={togglePlay}
+            priority={i < visibleCount}
+          />
+        ))}
+        {rows.length === 0 && (
+          <div className="py-8 text-center text-[#0A84FF]">Sin canciones todavía</div>
+        )}
       </div>
-    </>
-  );
+    </div>
+  </div>
+);
+
 };

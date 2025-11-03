@@ -5,26 +5,25 @@ import { BsGraphUp } from "react-icons/bs";
 import { SettingsMenu } from "./SettingsMenu";
 import { useRef, useState, useEffect } from "react";
 import { CgProfile } from "react-icons/cg";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PopoverPortal from "./PopoverPortal";
+import { flushSync } from "react-dom";
 
 export const SideBar = ({ compact = false, onNavigate }) => {
-  const [collapsed, setCollapsed] = useState(false); // sólo aplica en desktop (no compacto)
-
+  const [collapsed, setCollapsed] = useState(false);
   const avatarWrapRef = useRef(null);
   const avatarBtnRef  = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [animateClose, setAnimateClose] = useState(false);
 
   const { status, photoURL: photoURLFromRedux, displayName } = useSelector((s) => s.auth);
   const photoURL = photoURLFromRedux || localStorage.getItem("photoURL") || "";
+  const location = useLocation();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       const wrap = avatarWrapRef.current;
       const btn = avatarBtnRef.current;
-      // 🔧 FIX: 'contains', no 'containts'
       if (wrap && !wrap.contains(e.target) && btn && !btn.contains(e.target)) {
         setIsMenuOpen(false);
       }
@@ -33,51 +32,35 @@ export const SideBar = ({ compact = false, onNavigate }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleAvatarMouseDown = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.key]);
 
-  const handleAvatarMouseUp = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsMenuOpen((v) => !v);
-  };
-
+  // ⬅️ cierre sincrónico: se desmonta ANTES de que ocurra la navegación/click
   const closeMenu = () => {
-    setAnimateClose(true);
-    setTimeout(() => {
+    flushSync(() => {
       setIsMenuOpen(false);
-      setAnimateClose(false);
-    }, 200);
+    });
   };
 
   const handleDoubleClick = (e) => {
     if (e.target.closest("a")) return;
-    if (!compact) setCollapsed((v) => !v); // en modo compacto no colapsamos
+    if (!compact) setCollapsed((v) => !v);
   };
 
-  // Helpers para clases según modo
   const padClass   = compact ? "p-3" : "p-4";
   const roundClass = compact ? "rounded-xl" : "rounded-3xl";
   const gapClass   = compact ? "gap-2" : "gap-4";
   const itemPad    = compact ? "px-3 py-2 text-sm" : "px-4 py-3 text-base";
 
-  // ⚠️ MUY IMPORTANTE:
-  // Ahora la anchura la decide el contenedor padre (w-60 en desktop, w-[68vw] en drawer),
-  // por eso aquí usamos siempre `w-full` y no forzamos w-64/w-20,
-  // así evitamos peleas de layout. Cuando 'collapsed', sólo ocultamos los títulos.
   return (
     <aside
       onDoubleClick={handleDoubleClick}
       className={`w-full h-full bg-[#111111] ${padClass} ${roundClass} flex flex-col transition-all duration-300 ease-in-out`}
     >
-      {/* Cabecera/espaciador */}
       <div className="text-lg font-semibold mb-2" />
 
-      {/* Bloque de perfil */}
       <div className="flex flex-col items-center">
-        {/* En compacto: ocultamos el bloque grande para no ocupar pantalla */}
         {!compact && (
           !collapsed && (
             status === "authenticated" ? (
@@ -85,9 +68,8 @@ export const SideBar = ({ compact = false, onNavigate }) => {
                 <button
                   type="button"
                   ref={avatarBtnRef}
-                  onMouseDown={handleAvatarMouseDown}
-                  onMouseUp={handleAvatarMouseUp}
-                  className="text-lg px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1DF0D8]/50"
+                  onClick={() => setIsMenuOpen((v) => !v)}
+                  className="text-lg px-4 rounded-full"
                   aria-haspopup="menu"
                   aria-expanded={isMenuOpen}
                   aria-label="Abrir ajustes"
@@ -103,13 +85,17 @@ export const SideBar = ({ compact = false, onNavigate }) => {
                     <CgProfile className="w-8 h-8" />
                   )}
                 </button>
-                <PopoverPortal anchorRef={avatarBtnRef} open={isMenuOpen} onClose={closeMenu} align="bottom">
+
+                <PopoverPortal
+                  anchorRef={avatarBtnRef}
+                  open={isMenuOpen}
+                  onClose={closeMenu}
+                  align="bottom"
+                >
                   <div
                     className={`mt-2 transition-all duration-200 ${
                       isMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
                     }`}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
                   >
                     <SettingsMenu closeMenu={closeMenu} />
                   </div>
@@ -123,13 +109,11 @@ export const SideBar = ({ compact = false, onNavigate }) => {
           )
         )}
 
-        {/* Mini encabezado en compacto (opcional) */}
         {compact && (
           <div className="mb-1 text-gray-300 text-sm self-start">Menu</div>
         )}
       </div>
 
-      {/* Menú */}
       <div className="flex-1 flex items-center justify-center">
         <ul className={`flex flex-col items-center ${gapClass}`}>
           <li>

@@ -3,38 +3,37 @@ import { MdOutlineHomeWork } from "react-icons/md";
 import { RiFolderMusicLine } from "react-icons/ri";
 import { MdCancelPresentation } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
-import { FaRegBell } from "react-icons/fa6";
 import { Link } from "react-router-dom";
+import BackHeader from "./BackHeader";
 
 export const Account = () => {
   return (
-    <div className="bg-black min-h-screen text-gray-800 p-6 space-y-6 font-sans">
+    <div className="bg-black min-h-screen pb-6">
+      <BackHeader />
 
-      {/* Account */}
-      <div className="bg-[#1C1C1C] p-6 border border-[#0A84FF] rounded-xl shadow">
-        <h3 className="text-xl text-[#0A84FF] font-semibold mb-4">Account</h3>
-        <div className="space-y-4">
-          <CardItem icon={<BsPencil />} label="Personal information" to="/personal_information"/>
-          <CardItem icon={<MdOutlineHomeWork />}label="Address" to="/address" />
-        </div>
-      </div>
-
-      {/* Subscription */}
-      <div className="bg-[#1C1C1C] p-6 border border-[#0A84FF] rounded-xl shadow">
-        <h3 className="text-xl text-[#0A84FF] font-semibold mb-4">Subscription</h3>
-        <div className="space-y-4">
-          <CardItem icon={<RiFolderMusicLine />} label="Subscription management" to="/subscription_management"/>
-          <CardItem icon={<MdCancelPresentation />} label="Cancel subscription" to="/cancel_subscription" />
-        </div>
-      </div>
-
-      {/* Security & Privacy */}
-      <div className="bg-[#1C1C1C] p-6 border border-[#0A84FF] rounded-xl shadow">
-        <h3 className="text-xl text-[#0A84FF] font-semibold mb-4">Security and privacy</h3>
-        <div className="space-y-3 ">
-          <CardItem icon={<RiLockPasswordLine />} label="Change your password" to="/change_password"/>
+      <div className="px-4 space-y-4">
+        <div className="bg-[#1C1C1C] p-4 border border-[#0A84FF] rounded-xl shadow">
+          <h3 className="text-xl text-[#0A84FF] font-semibold mb-3">Account</h3>
+          <div className="space-y-3">
+            <CardItem icon={<BsPencil />} label="Personal information" to="/personal_information" />
+            <CardItem icon={<MdOutlineHomeWork />} label="Address" to="/address" />
+          </div>
         </div>
 
+        <div className="bg-[#1C1C1C] p-4 border border-[#0A84FF] rounded-xl shadow">
+          <h3 className="text-xl text-[#0A84FF] font-semibold mb-3">Subscription</h3>
+          <div className="space-y-3">
+            <CardItem icon={<RiFolderMusicLine />} label="Subscription management" to="/subscription_management" />
+            <CardItem icon={<MdCancelPresentation />} label="Cancel subscription" to="/cancel_subscription" />
+          </div>
+        </div>
+
+        <div className="bg-[#1C1C1C] p-4 border border-[#0A84FF] rounded-xl shadow">
+          <h3 className="text-xl text-[#0A84FF] font-semibold mb-3">Security and privacy</h3>
+          <div className="space-y-3">
+            <CardItem icon={<RiLockPasswordLine />} label="Change your password" to="/change_password" />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -52,10 +51,3 @@ const CardItem = ({ icon, label, to }) => (
     <span className="text-xl text-[#0A84FF]">›</span>
   </Link>
 );
-
-
-  
- 
-
-
-
